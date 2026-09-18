@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>eBuzz Thesis & Plan</title>
+<meta name="description" content="eBuzz.ai investment thesis and detailed business plan.">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/ebuzz.css">
+</head>
+<body>
+<header class="site-nav"><div class="in">
+  <a class="brand" href="index.html" id="brand"><span>eBuzz<b>.ai</b></span></a>
+  <nav class="links">
+    <a href="index.html#portals">Prototype</a>
+    <a href="docs.html?d=thesis" data-d="thesis">Thesis</a>
+    <a href="docs.html?d=plan" data-d="plan">Business plan</a>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode"></button>
+  </nav>
+</div></header>
+<div class="doc-layout">
+  <aside class="toc" id="toc" aria-label="Contents"></aside>
+  <article class="prose" id="doc"><p class="muted">Loading…</p></article>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<script src="assets/js/ui.js"></script>
+<script>
+(async function () {
+  document.getElementById('brand').insertAdjacentHTML('afterbegin', EB.logo());
+  const tb = document.getElementById('themeBtn'); tb.innerHTML = EB.icon('sun'); tb.onclick = EB.toggleTheme;
+  const DOCS = { thesis: ['docs/THESIS.md', 'Investment thesis'], plan: ['docs/BUSINESS_PLAN.md', 'Business plan'] };
+  const key = new URLSearchParams(location.search).get('d') in DOCS ? new URLSearchParams(location.search).get('d') : 'thesis';
+  document.querySelectorAll('[data-d]').forEach((a) => a.style.color = a.dataset.d === key ? 'var(--ink)' : '');
+  document.title = 'eBuzz ' + (key === 'plan' ? 'Business Plan' : 'Thesis');
+  const doc = document.getElementById('doc');
+  try {
+    const res = await fetch(DOCS[key][0]);
+    if (!res.ok) throw new Error(res.status);
+    const md = await res.text();
+    doc.innerHTML = marked.parse(md);
+  } catch (e) {
+    doc.innerHTML = `<h1>${DOCS[key][1]}</h1><p>This page couldn't load the document (browsers block this when a page is opened as a local file). Read it on GitHub instead: <a href="https://github.com/ravikrali/ebuzz-demo/blob/main/${DOCS[key][0]}">${DOCS[key][0]}</a>.</p>`;
+    return;
+  }
+  // links between docs
+  doc.querySelectorAll('a[href$=".md"]').forEach((a) => { if (/BUSINESS_PLAN/.test(a.getAttribute('href'))) a.href = 'docs.html?d=plan'; else if (/THESIS/.test(a.getAttribute('href'))) a.href = 'docs.html?d=thesis'; });
+  // responsive tables
+  doc.querySelectorAll('table').forEach((t) => { const w = document.createElement('div'); w.className = 'table-wrap'; t.replaceWith(w); w.append(t); });
+  // table of contents
+  const slug = (s) => s.toLowerCase().replace(/[^a-z0-9 -]/g, '').trim().replace(/\s+/g, '-');
+  const toc = document.getElementById('toc');
+  toc.innerHTML = `<div class="doc-tabs"><a class="btn sm ${key === 'thesis' ? 'primary' : ''}" href="docs.html?d=thesis">Thesis</a><a class="btn sm ${key === 'plan' ? 'primary' : ''}" href="docs.html?d=plan">Plan</a></div>`;
+  const hs = [...doc.querySelectorAll('h2')];
+  hs.forEach((h) => { h.id = slug(h.textContent); const a = document.createElement('a'); a.href = '#' + h.id; a.textContent = h.textContent; toc.append(a); });
+  doc.querySelectorAll('h3').forEach((h) => (h.id = slug(h.textContent)));
+  if (location.hash) { const t = document.getElementById(decodeURIComponent(location.hash.slice(1))); if (t) t.scrollIntoView(); }
+  const obs = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) toc.querySelectorAll('a[href^="#"]').forEach((a) => a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id)); }), { rootMargin: '0px 0px -75% 0px' });
+  hs.forEach((h) => obs.observe(h));
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>eBuzz.ai</title>
+<meta name="description" content="eBuzz.ai: a problem-first, chat-based marketplace where vendors compete live for your order and ad-funded games earn you shopping credits. Thesis, business plan and clickable prototype.">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/ebuzz.css">
+</head>
+<body>
+<header class="site-nav"><div class="in">
+  <a class="brand" href="index.html" id="brand"><span>eBuzz<b>.ai</b></span></a>
+  <nav class="links">
+    <a href="#how" class="hide-m">How it works</a>
+    <a href="#portals">Prototype</a>
+    <a href="docs.html?d=thesis">Thesis</a>
+    <a href="docs.html?d=plan">Business plan</a>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode"></button>
+  </nav>
+</div></header>
+
+<main class="wrap-w">
+  <section class="hero">
+    <div>
+      <div class="eyebrow"><span class="dot" style="color:var(--honey-strong)"></span> Concept · prototype · business plan</div>
+      <h1>Tell us what's wrong.<br><em>Brands compete live</em> to fix it.</h1>
+      <p class="lead">eBuzz.ai is a problem-first, chat-based marketplace. Describe your problem, get a plan and a shortlist of three, and watch the shortlisted vendors send you live offers while you decide. Between purchases, short ad-funded games earn you shopping credits.</p>
+      <div class="row wrap">
+        <a class="btn primary" href="app/customer.html">Try the shopper demo →</a>
+        <a class="btn" href="docs.html?d=thesis">Read the thesis</a>
+        <a class="btn ghost" href="docs.html?d=plan">Business plan</a>
+      </div>
+    </div>
+    <div class="mock" aria-label="Example conversation">
+      <div class="msg user"><div class="bubble">My back hurts after working from home all day</div></div>
+      <div class="msg bot"><div class="who" data-logo></div><div class="body"><div class="bubble">Here's your 3-step fix. <b>Step 1: a chair with adjustable lumbar support.</b> Your shortlist:</div>
+        <div class="offer-list">
+          <div class="offer"><div class="avatar">E</div><div class="o-main"><div class="o-title">ErgoMax Pro Lumbar</div><div class="o-sub">★ 4.7 · Most adjustable lumbar</div></div><div class="o-price">$329</div></div>
+          <div class="offer new"><div class="avatar v">C</div><div class="o-main"><div class="o-title">ChairCo Flex Mesh <span class="tag honey">Live offer</span></div><div class="o-sub">Save $30 · Free shipping · 2-yr warranty · <span class="timer">14:32 left</span></div></div><div class="o-price">$259</div></div>
+          <div class="offer"><div class="avatar g">S</div><div class="o-main"><div class="o-title">Sitwell Aria</div><div class="o-sub">Replied instantly · auto-bid</div></div><div class="o-price">$239</div></div>
+        </div></div></div>
+      <div class="msg system"><div class="bubble">⏳ ErgoMax asked for 5 minutes to prepare an offer</div></div>
+      <div class="sponsor"><span class="sp-label">Play & Win</span><span>🍯</span><div style="flex:1">You won <b>$0.50</b> in Buzz Crush. Applied at checkout.</div></div>
+    </div>
+  </section>
+
+  <section class="section" id="how">
+    <h2>How it works</h2>
+    <p class="sub">No endless catalog and no page-one ads. A conversation that ends in the best offer from the brands that actually solve your problem.</p>
+    <div class="grid4">
+      <div class="card"><div class="step-n">1</div><h3 style="margin:8px 0 6px">Describe the problem</h3><p class="muted" style="margin:0">"My dog destroys every toy." The Concierge asks up to 3 quick questions, shown as tappable chips.</p></div>
+      <div class="card"><div class="step-n">2</div><h3 style="margin:8px 0 6px">Get a plan + shortlist</h3><p class="muted" style="margin:0">A step-by-step fix and ~3 products, with "why this" explanations. Browsing stays limited to this problem.</p></div>
+      <div class="card"><div class="step-n">3</div><h3 style="margin:8px 0 6px">Vendors compete live</h3><p class="muted" style="margin:0">Shortlisted vendors send private offers. Tap "Ask for a better deal". Vendors can ask for a few minutes. It all happens alongside the chat.</p></div>
+      <div class="card"><div class="step-n">4</div><h3 style="margin:8px 0 6px">Play & win credits</h3><p class="muted" style="margin:0">Short skill games, paid for by ads, earn store credits that are applied automatically at checkout.</p></div>
+    </div>
+  </section>
+
+  <section class="section" id="portals">
+    <h2>Clickable prototype</h2>
+    <p class="sub">Every portal is chat-first: a copilot in the centre, interactive components inside the conversation, and a context panel with only what matters right now.</p>
+    <div class="grid3">
+      <a class="card portal-card" href="app/customer.html"><span class="tag honey" style="align-self:flex-start">Shopper</span><h3>Customer Concierge</h3><p class="muted" style="margin:0">Problem → plan → shortlist → live offers → checkout with credits. Plus a playable match-3 game, Wallet, Orders, Account & Preferences.</p><span class="go">Open →</span></a>
+      <a class="card portal-card" href="app/vendor.html"><span class="tag violet" style="align-self:flex-start">Vendor Manager</span><h3>Deal Room</h3><p class="muted" style="margin:0">Live shopper sessions, anonymised "price to beat", AI-suggested offers, "Need 5 min", auto-bid rules, win/loss analytics, Deal Boost.</p><span class="go">Open →</span></a>
+      <a class="card portal-card" href="app/supplier.html"><span class="tag green" style="align-self:flex-start">Supplier</span><h3>Supplier Hub</h3><p class="muted" style="margin:0">Contracts & e-sign, SKU upload with AI validation, inventory, orders & labels, returns, payouts, compliance.</p><span class="go">Open →</span></a>
+      <a class="card portal-card" href="app/finance.html"><span class="tag blue" style="align-self:flex-start">Finance Manager</span><h3>Finance Console</h3><p class="muted" style="margin:0">GMV & take rate, revenue mix, payout-batch approval with fraud holds, prize-pool governor, reconciliation, tax, forecast.</p><span class="go">Open →</span></a>
+      <a class="card portal-card" href="app/agents.html"><span class="tag" style="align-self:flex-start">COO · Agent Ops</span><h3>Agent Control Tower</h3><p class="muted" style="margin:0">24 agents across 8 domains, human-approval queue (videos, Top10 pages, outreach), Problem Radar, incidents, autonomy policies.</p><span class="go">Open →</span></a>
+      <div class="card" style="background:var(--honey-soft);border-color:transparent"><h3 style="margin-bottom:8px">⚡ Try the live negotiation</h3><p style="margin:0 0 12px;color:var(--honey-ink)">Open <b>Shopper</b> and <b>Deal Room</b> in two browser tabs side by side. Say "my back hurts" as the shopper, then tap <b>Ask for a better deal</b>. The request shows up in the Deal Room, and your offer (or "Need 5 min") goes straight back to the shopper. Finance and Agent Ops update live too.</p><div class="row wrap"><a class="btn sm primary" href="app/customer.html" target="_blank">Shopper tab</a><a class="btn sm" href="app/vendor.html" target="_blank">Deal Room tab</a></div></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Validation, in brief</h2>
+    <p class="sub">The model works, and it stands out if we build on the one thing giants won't copy: live competition at the shortlist moment.</p>
+    <div class="grid3">
+      <div class="card"><span class="tag green">Keep & invest</span><h3 style="margin:10px 0 6px">The Deal Room is the moat</h3><p class="muted" style="margin:0">Chat discovery is becoming a commodity (Alexa for Shopping, Google AI Mode, ChatGPT, Perplexity). Live multi-vendor offers aren't, and they create price-elasticity data no one else has.</p></div>
+      <div class="card"><span class="tag honey">Change</span><h3 style="margin:10px 0 6px">Design for law & trust</h3><p class="muted" style="margin:0">Session-scoped, anonymised "price to beat" (antitrust). Skill-based, free-to-play games with published odds (sweepstakes law, EU Digital Fairness Act). Agents negotiate instantly, which fixes Priceline's old "bidding hassle".</p></div>
+      <div class="card"><span class="tag violet">Add</span><h3 style="margin:10px 0 6px">More ways to win</h3><p class="muted" style="margin:0">Start in one vertical (Home, Sleep & WFH Wellness). Brand-sponsored game levels. Deal Boost + vendor SaaS. Offer eBuzz deals to other AI agents through the UCP/ACP protocols.</p></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>The business</h2>
+    <p class="sub">Commission on every transaction plus advertising, with retail media and vendor SaaS on top. Planning estimates:</p>
+    <div class="grid4">
+      <div class="card"><div class="muted" style="font-weight:600;font-size:13px">Year-5 GMV</div><div class="big-num">$1.0B</div></div>
+      <div class="card"><div class="muted" style="font-weight:600;font-size:13px">Year-5 revenue</div><div class="big-num">$221M</div><div class="muted" style="font-size:13px">~22% take rate</div></div>
+      <div class="card"><div class="muted" style="font-weight:600;font-size:13px">Year-5 EBITDA</div><div class="big-num">27%</div><div class="muted" style="font-size:13px">break-even ≈ month 40</div></div>
+      <div class="card"><div class="muted" style="font-weight:600;font-size:13px">Seed ask</div><div class="big-num">$4.0M</div><div class="muted" style="font-size:13px">18 months to Series A milestones</div></div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <div class="card-title" style="margin-bottom:12px">Competitive positioning</div>
+      <svg viewBox="0 0 720 330" style="width:100%;height:auto" role="img" aria-label="Positioning map: eBuzz is the only player combining conversational discovery with live multi-vendor price competition">
+        <line x1="60" y1="165" x2="690" y2="165" stroke="var(--line)" stroke-width="2"/>
+        <line x1="375" y1="20" x2="375" y2="310" stroke="var(--line)" stroke-width="2"/>
+        <text x="375" y="14" text-anchor="middle" font-size="12" fill="var(--muted)" font-weight="600">LIVE MULTI-VENDOR PRICE COMPETITION</text>
+        <text x="375" y="326" text-anchor="middle" font-size="12" fill="var(--muted)" font-weight="600">STATIC / PASSIVE PRICING</text>
+        <text x="62" y="158" font-size="12" fill="var(--muted)" font-weight="600">CATALOG-HEAVY</text>
+        <text x="688" y="158" text-anchor="end" font-size="12" fill="var(--muted)" font-weight="600">CONVERSATIONAL</text>
+        <g font-size="13" fill="var(--ink-2)">
+          <circle cx="150" cy="70" r="6" fill="var(--muted)"/><text x="162" y="74">Priceline NYOP (retired)</text>
+          <circle cx="200" cy="110" r="6" fill="var(--muted)"/><text x="212" y="114">Reverse auctions (Sokoz)</text>
+          <circle cx="300" cy="135" r="6" fill="var(--muted)"/><text x="230" y="130" text-anchor="end">eBay offers</text>
+          <circle cx="120" cy="215" r="6" fill="var(--muted)"/><text x="132" y="219">Amazon</text>
+          <circle cx="170" cy="250" r="6" fill="var(--muted)"/><text x="182" y="254">Temu · Shein</text>
+          <circle cx="250" cy="285" r="6" fill="var(--muted)"/><text x="262" y="289">Honey · Rakuten</text>
+          <circle cx="470" cy="215" r="6" fill="var(--muted)"/><text x="482" y="219">Alexa for Shopping</text>
+          <circle cx="560" cy="250" r="6" fill="var(--muted)"/><text x="572" y="254">ChatGPT · Perplexity</text>
+          <circle cx="520" cy="285" r="6" fill="var(--muted)"/><text x="532" y="289">Google AI Mode</text>
+        </g>
+        <circle cx="590" cy="70" r="14" fill="var(--honey)"/><text x="590" y="75" text-anchor="middle" font-size="13" font-weight="700" fill="#1A1200">★</text>
+        <text x="590" y="104" text-anchor="middle" font-size="15" font-weight="700" fill="var(--ink)">eBuzz.ai</text>
+      </svg>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>An AI-first company</h2>
+    <p class="sub">24 agents run every operational process. Humans approve anything that publishes content, signs contracts or moves money.</p>
+    <div class="chips">
+      <span class="tag honey">Problem Radar</span><span class="tag honey">Review Miner</span><span class="tag honey">Product Research</span><span class="tag violet">Top10 Lists</span><span class="tag violet">Video Studio (human-approved)</span><span class="tag violet">Publisher</span><span class="tag green">Supplier Scout & Outreach</span><span class="tag green">Contract Agent</span><span class="tag green">Catalog QA</span><span class="tag blue">Shopping Concierge</span><span class="tag blue">Negotiation Broker</span><span class="tag blue">Search-to-Order</span><span class="tag">Track Shipping</span><span class="tag">Returns & Refunds</span><span class="tag">Customer Service</span><span class="tag honey">Order-to-Cash</span><span class="tag honey">FP&A</span><span class="tag honey">Tax</span><span class="tag red">Fraud & Trust</span><span class="tag red">Legal</span><span class="tag red">Regulatory Watch</span><span class="tag green">Game Economy</span><span class="tag green">Ad Ops</span><span class="tag green">Vendor Success</span>
+    </div>
+    <div class="row wrap" style="margin-top:26px"><a class="btn primary" href="docs.html?d=plan#10-the-agentic-platform">Read the agent architecture →</a><a class="btn" href="app/agents.html">Open the control tower</a></div>
+  </section>
+</main>
+
+<footer class="site-foot"><div class="wrap-w">
+  <div class="row between wrap" style="gap:10px"><span>eBuzz.ai: concept prototype · September 2026</span><span><a href="docs.html?d=thesis">Thesis</a> · <a href="docs.html?d=plan">Business plan</a> · <a href="https://github.com/ravikrali/ebuzz-demo">Source</a></span></div>
+  <p style="margin:10px 0 0">All brands, products, people and figures in the prototype are fictional or illustrative. Financials are planning estimates, not a forecast or an offer of securities.</p>
+</div></footer>
+
+<script src="assets/js/ui.js"></script>
+<script>
+  document.getElementById('brand').insertAdjacentHTML('afterbegin', EB.logo());
+  document.querySelectorAll('[data-logo]').forEach((e) => (e.innerHTML = EB.logo(30)));
+  const tb = document.getElementById('themeBtn'); tb.innerHTML = EB.icon('sun'); tb.onclick = EB.toggleTheme;
+</script>
+</body>
+</html>
