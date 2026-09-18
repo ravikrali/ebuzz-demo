@@ -63,12 +63,12 @@
     <h2>Clickable prototype</h2>
     <p class="sub">Every portal is chat-first: a copilot in the centre, interactive components inside the conversation, and a context panel with only what matters right now.</p>
     <div class="grid3">
-      <a class="card portal-card" href="app/customer.html"><span class="tag honey" style="align-self:flex-start">Shopper</span><h3>Customer Concierge</h3><p class="muted" style="margin:0">Problem → plan → shortlist → live offers → checkout with credits. Plus a playable match-3 game, Wallet, Orders, Account & Preferences.</p><span class="go">Open →</span></a>
+      <a class="card portal-card" href="app/customer.html"><span class="tag honey" style="align-self:flex-start">Shopper</span><h3>Customer Concierge</h3><p class="muted" style="margin:0">Problem → plan → shortlist → live offers. A persistent cart &amp; checkout pane with "For you" suggestions from context and on-device memory, a dashboard of every transaction, playable games with win limits, Wallet and Account.</p><span class="go">Open →</span></a>
       <a class="card portal-card" href="app/vendor.html"><span class="tag violet" style="align-self:flex-start">Vendor Manager</span><h3>Deal Room</h3><p class="muted" style="margin:0">Live shopper sessions, anonymised "price to beat", AI-suggested offers, "Need 5 min", auto-bid rules, win/loss analytics, Deal Boost.</p><span class="go">Open →</span></a>
-      <a class="card portal-card" href="app/supplier.html"><span class="tag green" style="align-self:flex-start">Supplier</span><h3>Supplier Hub</h3><p class="muted" style="margin:0">Contracts & e-sign, SKU upload with AI validation, inventory, orders & labels, returns, payouts, compliance.</p><span class="go">Open →</span></a>
-      <a class="card portal-card" href="app/finance.html"><span class="tag blue" style="align-self:flex-start">Finance Manager</span><h3>Finance Console</h3><p class="muted" style="margin:0">GMV & take rate, revenue mix, payout-batch approval with fraud holds, prize-pool governor, reconciliation, tax, forecast.</p><span class="go">Open →</span></a>
+      <a class="card portal-card" href="app/supplier.html"><span class="tag green" style="align-self:flex-start">Supplier</span><h3>Supplier Hub</h3><p class="muted" style="margin:0">Dashboard with every transaction, team &amp; role-based access, contracts &amp; e-sign, SKU upload with AI validation, inventory, orders, payouts, compliance.</p><span class="go">Open →</span></a>
+      <a class="card portal-card" href="app/admin.html"><span class="tag blue" style="align-self:flex-start">Admin</span><h3>Admin Console</h3><p class="muted" style="margin:0">Platform dashboard with every transaction, daily/weekly/monthly win limits, staff &amp; RBAC (Territory Managers, CS Associates), payouts, reconciliation, tax, forecast.</p><span class="go">Open →</span></a>
       <a class="card portal-card" href="app/agents.html"><span class="tag" style="align-self:flex-start">COO · Agent Ops</span><h3>Agent Control Tower</h3><p class="muted" style="margin:0">24 agents across 8 domains, human-approval queue (videos, Top10 pages, outreach), Problem Radar, incidents, autonomy policies.</p><span class="go">Open →</span></a>
-      <div class="card" style="background:var(--honey-soft);border-color:transparent"><h3 style="margin-bottom:8px">⚡ Try the live negotiation</h3><p style="margin:0 0 12px;color:var(--honey-ink)">Open <b>Shopper</b> and <b>Deal Room</b> in two browser tabs side by side. Say "my back hurts" as the shopper, then tap <b>Ask for a better deal</b>. The request shows up in the Deal Room, and your offer (or "Need 5 min") goes straight back to the shopper. Finance and Agent Ops update live too.</p><div class="row wrap"><a class="btn sm primary" href="app/customer.html" target="_blank">Shopper tab</a><a class="btn sm" href="app/vendor.html" target="_blank">Deal Room tab</a></div></div>
+      <div class="card" style="background:var(--honey-soft);border-color:transparent"><h3 style="margin-bottom:8px">⚡ Try the live negotiation</h3><p style="margin:0 0 12px;color:var(--honey-ink)">Open <b>Shopper</b> and <b>Deal Room</b> in two browser tabs side by side. Say "my back hurts" as the shopper, then tap <b>Ask for a better deal</b>. The request shows up in the Deal Room, and your offer (or "Need 5 min") goes straight back to the shopper. Admin, Supplier and Agent Ops update live too.</p><div class="row wrap"><a class="btn sm primary" href="app/customer.html" target="_blank">Shopper tab</a><a class="btn sm" href="app/vendor.html" target="_blank">Deal Room tab</a></div></div>
     </div>
   </section>
 
@@ -115,6 +115,17 @@
         <text x="590" y="104" text-anchor="middle" font-size="15" font-weight="700" fill="var(--ink)">eBuzz.ai</text>
       </svg>
     </div>
+  </section>
+
+  <section class="section">
+    <h2>Local-first, private by design</h2>
+    <p class="sub">Every portal keeps its data in a SQLite database on the device and syncs it across devices. Personal and financial details are encrypted on the device, so the central database stores only what the platform strictly needs.</p>
+    <div class="grid3">
+      <div class="card"><span class="cls local">This device only</span><h3 style="margin:10px 0 6px">Memory & conversations</h3><p class="muted" style="margin:0">What the Concierge remembers about you never leaves your device.</p></div>
+      <div class="card"><span class="cls vault">E2EE vault</span><h3 style="margin:10px 0 6px">Name, email, address, phone</h3><p class="muted" style="margin:0">Encrypted on the device (AES-256-GCM) and synced as ciphertext. Only your own devices can read it. Admins see a pseudonymous ID.</p></div>
+      <div class="card"><span class="cls central">Central</span><h3 style="margin:10px 0 6px">Only what's required</h3><p class="muted" style="margin:0">Order amounts for settlement, state for sales tax, the credit ledger for fraud checks, and roles for access control. Card numbers stay with the payment processor.</p></div>
+    </div>
+    <p class="muted" style="margin-top:14px;font-size:14px">Try it: open any portal, click the <b>sync</b> chip in the top bar, then choose "Open as Phone" to watch a second device sync.</p>
   </section>
 
   <section class="section">

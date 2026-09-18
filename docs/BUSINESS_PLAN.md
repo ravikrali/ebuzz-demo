@@ -80,14 +80,16 @@ Connect **high-intent shoppers** and **brands willing to compete** at the moment
 
 ### 4.1 Personas & portals
 
-All portals are **chat-first**: a copilot conversation in the centre, rich interactive components inside the chat (cards, comparisons, tables, forms), and a **context panel** that shows only the filters and information relevant to the current task.
+All portals are **chat-first**: a copilot conversation in the centre, rich interactive components inside the chat (cards, comparisons, tables, forms), and a **context panel** that shows only the filters and information relevant to the current task. The chat is where people get things done. Every portal also has a **Dashboard** with all KPIs and the *full* transaction list (search, filters, sorting, paging, CSV export), because long lists don't belong in a chat window.
+
+Each portal has its own accent colour (Shopper honey, Deal Room violet, Supplier green, Admin blue, Agent Ops rose). Every portal offers a **Light** (light bluish-gray) and a **Dark** (gray) theme.
 
 | Persona | Portal | Core jobs |
 |---|---|---|
-| **Shopper** | Customer Concierge | Describe problem → get a plan and shortlist → compare → receive/ask for offers → check out with wallet credits; Play & Win; Account, Preferences, Wallet, Orders |
-| **Supplier (catalog/ops admin)** | Supplier Hub | Contracts & e-sign, SKU/inventory upload, catalog quality, orders & fulfilment, returns, payouts, compliance documents, performance |
+| **Shopper** | Customer Concierge | Describe problem → get a plan and shortlist → compare → receive/ask for offers. A **persistent right pane** has the **cart & checkout** at the top and **"For you" suggestions** from the current context and on-device memory. Also: Dashboard (all KPIs and every transaction), Play & Win, Wallet, Orders, Account & Preferences |
+| **Supplier (catalog/ops admin)** | Supplier Hub | Dashboard (all KPIs and every order, refund, fee and payout), **staff & role-based access control**, contracts & e-sign, SKU/inventory upload, orders & fulfilment, returns, payouts, compliance documents |
 | **Vendor Manager (pricing/sales)** | Deal Room | Live shopper sessions, competitor "price to beat", make offers, "need 5 min", auto-bid rules, win/loss analytics, Deal Boost budget |
-| **Finance Manager (eBuzz)** | Finance Console | GMV, take rate, ad revenue, prize-pool liability, payouts, reconciliation, tax, refunds, cash position |
+| **Admin (eBuzz)** | Admin Console | Dashboard (platform KPIs and every transaction, with customers shown as pseudonymous IDs), **daily / weekly / monthly win limits**, **staff & RBAC** (Territory Managers, Customer Service Associates, Finance, Content, Compliance), payout approval, reconciliation, tax, forecast |
 | **Agent Ops / COO (eBuzz)** | Agent Control Tower | Monitor all agents, human-approval queue (videos, contracts, high-value refunds), policies, incidents |
 | Also: Legal & Compliance, Trust & Safety, Category Manager | Role-scoped views of the control tower | |
 
@@ -120,12 +122,26 @@ All portals are **chat-first**: a copilot conversation in the centre, rich inter
 - **Games:** Match-3 ("Buzz Crush"), Memory Flip, 60-second product quiz, daily streak.
 - **Funding:** Rewarded video and banner ads within the Play zone only. US rewarded video eCPMs are roughly **$16–20** in 2026. With ~2 rewarded views per session, ad revenue is about **$0.03–0.04 per session**.
 - **Prize economics:** Prize pool = **40% of Play-zone ad revenue** (governed automatically). Typical prizes are $0.10–$2.00 credits, with rare $5–$25 "jackpot" credits sponsored by brands. Credits expire after 60 days and can cover at most 10% of an order.
+- **Win limits (set in the Admin portal):** per player $1/day, $4/week, $12/month and 5 plays/day by default, plus platform prize-pool caps per day, week and month. A prize that would go over a limit is reduced to the remaining room; games stay free to play. Changes sync to every shopper device right away.
 - **Compliance:** Skill-based scoring decides credits. Any chance element (daily spin) has a free alternative way to enter, published odds and official rules. 18+ only. No purchase needed. Daily caps and no manipulative countdowns.
 
 ### 4.5 Account, Preferences & Wallet
 - Profile, addresses, saved payment tokens (handled by the payment provider, never stored by eBuzz), household members, sizes.
 - **Preferences:** budget style (value/premium), brands to avoid, sustainability focus, delivery speed, notification rules for deals.
 - **Wallet:** credit balance, pending credits, expiry schedule, history, "apply automatically" toggle.
+- **Memory:** what the Concierge remembers (e.g. "light sleeper", "large dog") is visible and deletable. It is stored **on the device only**.
+
+### 4.6 Staff & role-based access control (RBAC)
+
+| Portal | Default roles | Scoping |
+|---|---|---|
+| Supplier Hub | Owner (all), Ops Admin, Catalog Manager, Pricing Manager, Fulfilment, Finance Viewer | By vendor organisation |
+| Admin Console | Super Admin (all), Finance Manager, **Territory Manager**, **Customer Service Associate**, Content Editor, Compliance Officer | By territory (US-West, US-Central, US-South, US-Northeast, Canada) for vendors, customers and cases |
+
+- Permissions are grouped: catalog, pricing & Deal Room, orders, money, legal/compliance and administration for suppliers; dashboards, money, vendors, customers and platform for eBuzz staff. Roles are edited in a permission matrix, and custom roles can be added.
+- Sensitive actions carry built-in limits. For example, CS Associates can refund up to $200 and grant goodwill credits up to $10; bigger refunds need Finance.
+- Access is **enforced server-side on every request**. AI agents act only within the permissions of the person or process that started them.
+- Staff names and emails live in the organisation's encrypted vault. Only role, scope and status are stored centrally in plaintext.
 
 ---
 
@@ -353,6 +369,44 @@ Agentic commerce is projected (McKinsey) to reach **$3–5T** in annual revenue 
 | Games | HTML5 canvas games, server-side score checks, anti-bot |
 | Ads | Google Ad Manager / rewarded video mediation within the Play zone only |
 | Security | SOC 2 Type I (Year 1) → Type II (Year 2); PCI handled by the payment provider |
+| On-device data | **SQLite on every device** (web: SQLite-WASM persisted to OPFS/IndexedDB; iOS/Android: native SQLite) |
+| Sync | Local-first replication (outbox → central; change feed → devices), end-to-end encrypted vault for PII (see 12.1) |
+
+### 12.1 Local-first data architecture & privacy
+
+**Principle:** personal and financial details stay on the user's own devices as much as possible. The central database stores only the attributes the business *must* have. Everything else syncs **end-to-end encrypted**: the central database stores only ciphertext and can't read it.
+
+```
+ Device A (SQLite)            eBuzz central               Device B (SQLite)
+ ┌──────────────────┐   push   ┌────────────────────┐  pull   ┌──────────────────┐
+ │ plaintext rows   │ ───────► │ required columns   │ ──────► │ plaintext rows   │
+ │ + outbox         │          │ (plaintext)        │         │ (decrypted with  │
+ │ memory (local)   │  AES-GCM │ + vault ciphertext │         │  the account key)│
+ └──────────────────┘ ───────► └────────────────────┘ ──────► └──────────────────┘
+```
+
+| Data | Where it lives | Central copy | Why central needs it |
+|---|---|---|---|
+| Concierge memory, conversations | Device only | None | Not needed |
+| Name, email, phone, street address, ZIP | Device + E2EE vault | Ciphertext only | Only synced between the user's devices. Auth uses a passkey plus a salted email hash held by the identity provider |
+| State / region | Device + central | Plaintext | Sales-tax calculation, territory routing |
+| Preferences | Device + E2EE vault | Consent flags only | Legal record of consent for live offers |
+| Orders | Device + central | Order ID, pseudonymous user ID, SKU, vendor, qty, prices, tax, credits, status | Settlement, commission, tax, returns, fraud |
+| Shipping address for an order | Device + E2EE vault | Not stored | Released to the fulfilling vendor through a one-time, expiring fulfilment token |
+| Card / bank details | Payment processor vault | Token reference only | PCI scope stays with the processor |
+| Wallet credit ledger | Device + central | Amount, type, date | Liability accounting, win-limit enforcement, abuse prevention |
+| Cart | Device + central | SKU, qty, price, offer flag | Continue on another device |
+| Staff (supplier & eBuzz) | Device + org vault | Role, scope, status | Server-side access control |
+
+**Sync protocol.** Each write goes to local SQLite first (so it works offline). Changes go into an outbox. On sync, each row is split into central columns (plaintext) and private columns (sealed with AES-256-GCM using a per-account key derived on the device). Central keeps a per-record version. Devices pull newer versions and decrypt the vault locally. Conflicts are resolved last-writer-wins per record (per field for profile data), with a server-assigned version and an audit trail.
+
+**Key management.** The account key is created on the first device and shared with new devices through a device-to-device approval (QR code or passkey-protected key wrap). A recovery key is offered to the user. eBuzz never holds the unwrapped key. Losing every device *and* the recovery key means the vault can't be recovered (orders and credits remain, since they are central).
+
+**What admins see.** The Admin Console works from central data, where customers are pseudonymous IDs. Support staff ask the customer to share details inside a case (a time-boxed, audited share) instead of browsing PII.
+
+**Benefits:** a smaller breach impact, easier compliance with GDPR/CCPA data minimisation, faster offline-capable apps, and trust as a marketing point. **Trade-offs:** harder server-side analytics on PII (we use aggregated, pseudonymous data instead), more complex key recovery, and support flows that need the customer's consent to view details.
+
+The prototype implements this model: each portal opens a real SQLite database in the browser, syncs to a simulated central store, and encrypts PII with WebCrypto AES-GCM. Open any portal with `?device=phone` to watch a second device sync.
 
 ---
 
@@ -367,7 +421,7 @@ Agentic commerce is projected (McKinsey) to reach **$3–5T** in annual revenue 
 | **Personalised pricing** | State algorithmic-pricing disclosure laws (e.g. New York) | Label: "This offer was set for you in a live session." |
 | **Antitrust** | Sherman Act §1 (no facilitating collusion) | Session-scoped, anonymised "price to beat"; no aggregated competitor feeds; counsel review |
 | **Games / promotions** | State sweepstakes/lottery laws; "no purchase necessary"; skill vs. chance | Skill-based, free alternative entry, official rules, published odds, 18+, excluded states where needed |
-| **Privacy** | CCPA/CPRA and state privacy laws; GDPR (international) | Consent management, data minimisation, deletion rights |
+| **Privacy** | CCPA/CPRA and state privacy laws; GDPR (international) | Local-first storage with an E2EE vault for PII (section 12.1), consent management, data minimisation, deletion rights |
 | **AI** | AI-content disclosure (YouTube synthetic-media labels), EU AI Act transparency (international), chatbot disclosure laws | "You're chatting with an AI" label; AI video labels |
 | **Email/SMS outreach** | CAN-SPAM, TCPA | Opt-outs, no cold SMS |
 | **Product safety** | CPSC recalls, Prop 65 | Catalog QA checks, recall monitoring |

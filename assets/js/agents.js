@@ -62,7 +62,7 @@
       ].map(([ic, t, s, k]) => `<div class="set-row"><div class="row" style="gap:12px"><div class="avatar v" style="border-radius:10px">${icon(ic)}</div><div>${t}<small>${s}</small></div></div><button class="btn sm primary" data-k="${k}">Review</button></div>`).join('')}</div>`);
       $$('.avatar svg', c).forEach((s) => { s.style.width = '17px'; s.style.height = '17px'; });
       await chat.bot(['4 items are waiting for a human decision:', c]);
-      $$('[data-k]', c).forEach((b) => (b.onclick = () => { const k = b.dataset.k; if (k === 'studio') W.studio(); else if (k === 'outreach') W.outreach(); else if (k === 'fin') location.href = 'finance.html'; else W.top10(); }));
+      $$('[data-k]', c).forEach((b) => (b.onclick = () => { const k = b.dataset.k; if (k === 'studio') W.studio(); else if (k === 'outreach') W.outreach(); else if (k === 'fin') location.href = 'admin.html'; else W.top10(); }));
     },
     async studio() {
       const c = h(`<div class="card"><div class="grid2" style="align-items:start">

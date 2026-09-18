@@ -84,30 +84,66 @@
     { id: 'arm', name: 'Arcus Single Monitor Arm', vendor: 'Arcus', price: 79, rating: 4.5, reviews: 2650, e: '🖥️', c: 'v', why: 'Full height + depth adjust. Frees desk space.' },
   ];
 
+  const D = EB.data;
+  const UID = 'u_maya';
   const S = {
-    wallet: EB.sstore.get('eb-wallet', 3.4),
-    history: EB.sstore.get('eb-wallet-h', [
-      { d: 'Sep 16', t: 'Buzz Crush: Level win', a: 0.5 },
-      { d: 'Sep 14', t: 'Memory Flip: Perfect round', a: 0.25 },
-      { d: 'Sep 12', t: 'Referral bonus (Sam)', a: 5 },
-      { d: 'Sep 10', t: 'Used on order #EB-20481', a: -2.35 },
-    ]),
     autoApply: true,
     problem: null, answers: {}, offers: {}, sid: null, dealOpen: false, asked: 0,
-    vendorOnline: false, orders: EB.sstore.get('eb-orders', []),
-    plays: EB.sstore.get('eb-plays', 5), points: 1240,
+    vendorOnline: false, points: 1240, view: 'chat',
   };
-  const saveWallet = () => { EB.sstore.set('eb-wallet', S.wallet); EB.sstore.set('eb-wallet-h', S.history); };
+  const LIMIT_DEFAULTS = { user: { daily: 1, weekly: 4, monthly: 12, plays: 5 }, platform: { daily: 1500, weekly: 9000, monthly: 35000 } };
+  const limits = () => { const c = D.get('config', 'win_limits'); try { return c ? JSON.parse(c.json) : LIMIT_DEFAULTS; } catch { return LIMIT_DEFAULTS; } };
+  const walletBal = () => +D.all('wallet_tx').reduce((a, x) => a + (+x.amount || 0), 0).toFixed(2);
+  const cartRows = () => D.all('cart').sort((a, b) => String(a.added_at).localeCompare(String(b.added_at)));
+  const profile = () => D.get('profile', UID) || {};
+  const memories = () => D.all('memory').sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  const playsKey = () => 'eb-plays-' + D.today();
+  const playsLeft = () => Math.max(0, limits().user.plays - EB.sstore.get(playsKey(), 0));
   const allItems = () => (S.problem ? [...PROBLEMS[S.problem].items, ...PROBLEMS[S.problem].more, ...(S.problem === 'back' ? RISERS : [])] : []);
-  const find = (id) => allItems().find((i) => i.id === id);
+  const CATALOG = () => { const m = {}; [...Object.values(PROBLEMS).flatMap((p) => [...p.items, ...p.more]), ...RISERS, ...EXTRA].forEach((i) => (m[i.id] = m[i.id] || i)); return m; };
+  const find = (id) => allItems().find((i) => i.id === id) || CATALOG()[id];
   const eff = (it) => (S.offers[it.id] ? S.offers[it.id].price : it.price);
+  const EXTRA = [
+    { id: 'remind', name: 'Move-every-45-min reminder', vendor: 'eBuzz (free)', price: 0, rating: 4.8, reviews: 1200, e: '⏰', c: 'g', why: 'Free solution: no purchase needed.', free: true },
+    { id: 'cush', name: 'Sitwell Memory Foam Seat Cushion', vendor: 'Sitwell Home', price: 39, rating: 4.5, reviews: 2210, e: '🟫', c: '', why: 'Trending fix for tailbone pain.' },
+  ];
+
+  /* ---------------- demo seed (first run on a device with no synced data) ---------------- */
+  async function seed(tables) {
+    const r = D.rng(42), pick = (a) => a[Math.floor(r() * a.length)];
+    if (tables.includes('profile')) await D.put('profile', { id: UID, name: 'Maya Rodriguez', email: 'maya@example.com', phone: '+1 512 555 0142', address: '221 Pine St', city: 'Austin', state: 'TX', zip: '78701', card_label: 'Visa ···· 4242', created_at: D.daysAgo(340) }, { silent: true });
+    if (tables.includes('prefs')) await D.put('prefs', { id: UID, budget_style: 'Balanced', delivery: 'Standard', values_json: JSON.stringify(['Sustainable', 'Long warranty']), avoid: 'QuickBuy Basics', offers_opt_in: '1', memory_opt_in: '1', train_opt_in: '0' }, { silent: true });
+    if (tables.includes('memory') && D.device === 'laptop') await D.put('memory', [
+      ['pref', 'Prefers long warranties over the lowest price'], ['home', 'Works from home 3 days a week'], ['pet', 'Has a large dog (Labrador, "Biscuit")'], ['sleep', 'Light sleeper: street light through the bedroom window'], ['body', 'Height 5\'4" (feet may not reach the floor at a standard desk)'],
+    ].map(([kind, text], i) => ({ id: 'mem-' + i, kind, text, date: D.daysAgo(10 + i * 30) })), { silent: true });
+    const PAST = [['Hushly Fan White-Noise Machine', '🔊', 'Hushly', 39, 'hush'], ['TuffRoot Rubber Chew', '🦴', 'TuffRoot', 18, 'tuff'], ['LunaDark Blackout Liner', '🌙', 'LunaDark', 29, 'luna2'], ['Lift Monitor Riser', '🖥️', 'DeskLab', 45, 'riser1'], ['BrainyPup Puzzle Feeder L3', '🧩', 'BrainyPup', 34, 'puzzle'], ['Sitwell Memory Foam Seat Cushion', '🟫', 'Sitwell Home', 39, 'cush'], ['Drift Contour Sleep Mask', '😴', 'Drift', 19, 'drift'], ['KnotKing Mega Rope', '🪢', 'KnotKing', 22, 'rope'], ['Arcus Single Monitor Arm', '🖥️', 'Arcus', 79, 'arm'], ['Rocker Footrest', '🦶', 'DeskLab', 32, 'foot'], ['CalmTone Speaker', '🔊', 'CalmTone', 59, 'snooz']];
+    const orders = [], tx = [];
+    for (let i = 0; i < 26; i++) {
+      const [item, emoji, vendor, list, sku] = pick(PAST), day = Math.floor(8 + r() * 330);
+      const via = r() < 0.45 ? 'Deal Room' : r() < 0.7 ? 'Concierge' : 'Top10 page';
+      const price = via === 'Deal Room' ? +(list * (0.86 + r() * 0.1)).toFixed(2) : list, qty = r() < 0.15 ? 2 : 1;
+      const credit = r() < 0.4 ? +Math.min(price * qty * 0.1, 0.5 + r() * 1.5).toFixed(2) : 0, tax = +(price * qty * 0.0825).toFixed(2);
+      const id = 'EB-' + (19000 + i * 53);
+      const status = r() < 0.08 ? 'Refunded' : 'Delivered';
+      orders.push({ id, user_id: UID, date: D.daysAgo(day), item, emoji, sku, vendor, qty, list_price: list, price, credit, tax, total: +(price * qty + tax - credit).toFixed(2), status, via, ship_to: '221 Pine St, Austin TX 78701' });
+      if (credit) tx.push({ id: 'W-' + id, user_id: UID, date: D.daysAgo(day), type: 'spend', label: `Used on order ${id}`, amount: -credit });
+      if (status === 'Refunded' && credit) tx.push({ id: 'WR-' + id, user_id: UID, date: D.daysAgo(day - 5), type: 'refund', label: `Credits returned: ${id}`, amount: credit });
+    }
+    for (let i = 0; i < 34; i++) { const d = Math.floor(9 + r() * 320), g = pick(['Buzz Crush', 'Memory Flip']); tx.push({ id: 'G-' + i, user_id: UID, date: D.daysAgo(d), type: 'game', label: `${g}: prize`, amount: pick([0.1, 0.1, 0.25, 0.25, 0.5]) }); }
+    tx.push({ id: 'REF-1', user_id: UID, date: D.daysAgo(190), type: 'referral', label: 'Referral bonus (Sam)', amount: 5 }, { id: 'PR-1', user_id: UID, date: D.daysAgo(300), type: 'promo', label: 'Welcome credit', amount: 5 });
+    const bal = tx.reduce((a, x) => a + x.amount, 0);
+    tx.push({ id: 'EXP-1', user_id: UID, date: D.daysAgo(12), type: 'expired', label: 'Credits expired (60-day rule)', amount: +(3.4 - bal).toFixed(2) });
+    if (tables.includes('orders')) await D.put('orders', orders, { silent: true });
+    if (tables.includes('wallet_tx')) await D.put('wallet_tx', tx, { silent: true });
+  }
 
   /* ---------------- shell ---------------- */
   const chat = EB.shell({
     persona: 'customer',
-    user: { name: 'Maya R.', role: `Wallet ${money(S.wallet)}`, initials: 'MR' },
+    user: { name: 'Maya R.', role: 'Wallet …', initials: 'MR' },
     rail: [
       { id: 'chat', label: 'Concierge', icon: 'chat' },
+      { id: 'dash', label: 'Dashboard', icon: 'grid' },
       { id: 'play', label: 'Play & Win', icon: 'play', badge: 'NEW' },
       { id: 'wallet', label: 'Wallet', icon: 'wallet' },
       { id: 'orders', label: 'Orders', icon: 'box' },
@@ -118,59 +154,130 @@
     onNav: nav,
   });
   EB.setNav('chat');
-  const updWalletChip = () => { const u = $('.user-chip .muted'); if (u) u.textContent = `Wallet ${money(S.wallet)}`; };
+  $('#ctxBtn').innerHTML = `${icon('cart')}`;
+  $('#ctxBtn').style.position = 'relative';
+  const updWalletChip = () => {
+    const u = $('.user-chip .muted'); if (u) u.textContent = `Wallet ${money(walletBal())}`;
+    const n = cartRows().reduce((a, x) => a + x.qty, 0);
+    $('#ctxBtn').innerHTML = `${icon('cart')}${n ? `<span class="count-badge" style="position:absolute;top:-4px;right:-6px">${n}</span>` : ''}`;
+  };
 
   function nav(id) {
+    S.view = id;
     if (id === 'chat') EB.view('chat');
+    if (id === 'dash') renderDash();
     if (id === 'play') renderPlay();
     if (id === 'wallet') renderWallet();
     if (id === 'orders') renderOrders();
     if (id === 'account') renderAccount();
   }
 
-  /* ---------------- context panel ---------------- */
+  /* ---------------- cart ---------------- */
+  async function addToCart(it, { quiet = false } = {}) {
+    if (it.free) { chat.bot(`${icon('check')} Done. I'll remind you to stand up and stretch every 45 minutes during work hours (9–6). No purchase needed.`); EB.toast('Reminder turned on'); return; }
+    const line = cartRows().find((l) => l.sku === it.id);
+    const price = eff(it);
+    if (line) await D.put('cart', { ...line, qty: line.qty + 1, price: Math.min(line.price, price), offer: S.offers[it.id] ? 1 : line.offer });
+    else await D.put('cart', { id: D.id('C'), user_id: UID, sku: it.id, item: it.name, emoji: it.e, vendor: it.vendor, list_price: it.price, price, qty: 1, offer: S.offers[it.id] ? 1 : 0, added_at: new Date().toISOString() });
+    if (!quiet) EB.toast(`${it.e} Added to cart${S.offers[it.id] ? ' with live-offer price' : ''}`);
+    renderContext();
+  }
+  const cartTotals = () => {
+    const lines = cartRows();
+    const sub = lines.reduce((a, l) => a + l.price * l.qty, 0), list = lines.reduce((a, l) => a + l.list_price * l.qty, 0);
+    const ship = !lines.length || sub >= 100 ? 0 : 5.99, tax = +(sub * 0.0825).toFixed(2);
+    const credit = S.autoApply ? Math.min(walletBal(), +(sub * 0.1).toFixed(2)) : 0;
+    return { lines, sub, saved: list - sub, ship, tax, credit, total: +(sub + ship + tax - credit).toFixed(2) };
+  };
+
+  /* ---------------- suggestions (context + on-device memory) ---------------- */
+  function suggestions() {
+    const C = CATALOG(), mem = memories().map((m) => m.text).join(' ').toLowerCase();
+    const inCart = new Set(cartRows().map((l) => l.sku));
+    const recent = D.all('orders').sort((a, b) => b.date.localeCompare(a.date));
+    const bought = (sku) => recent.find((o) => o.sku === sku);
+    const out = [];
+    const add = (id, why) => { if (C[id] && !inCart.has(id) && !out.find((x) => x.it.id === id)) out.push({ it: C[id], why }); };
+    if (S.problem === 'back') {
+      bought('riser1') ? add('arm', 'Step 2: you already own a riser, so an arm frees up desk space') : add('riser1', 'Step 2 of your plan');
+      add('remind', 'Step 3 of your plan: free');
+      if (/5'4/.test(mem)) add('foot', 'Memory: you\'re 5\'4", so your feet may not reach the floor');
+      add('backbuddy', 'If you keep your current chair');
+    } else if (S.problem === 'sleep') {
+      if (bought('hush')) add('luna', `You bought Hushly on ${bought('hush').date}. Now block the light`); else add('hush', 'Masks street noise');
+      add('drift', 'For nights away');
+    } else if (S.problem === 'pet') {
+      if (/labrador|large dog/.test(mem)) add('puzzle', 'Memory: Biscuit is a Labrador. Puzzles tire out smart breeds');
+      add('tuff', 'Replaced free if destroyed');
+    }
+    if (/light sleeper/.test(mem)) add('luna', 'Memory: street light wakes you up');
+    if (/labrador|large dog/.test(mem)) add('tuff', 'Memory: for Biscuit, a power-chewer toy');
+    add('cush', 'Trending: tailbone pain when sitting (+64%)');
+    if (/warrant/.test(mem) && S.problem === 'back') add('ergomax', 'Memory: you prefer long warranties (12-yr)');
+    return out.slice(0, 4);
+  }
+
+  /* ---------------- right pane: cart & checkout, suggestions, context ---------------- */
   function renderContext() {
     const P = S.problem && PROBLEMS[S.problem];
     const offers = Object.entries(S.offers);
+    const T = cartTotals();
+    const sug = suggestions();
     const ctx = $('#context');
     ctx.innerHTML = `
-      <div class="ctx-section">
-        <div class="row between"><h4 style="margin:0">Current context</h4><button class="icon-btn ctx-close" onclick="EB.closeOverlays()" aria-label="Close">${icon('x')}</button></div>
-        ${P ? `<div class="ctx-title" style="margin-top:8px">${P.title}</div>
-          <div class="chips" style="margin-top:10px">${Object.values(S.answers).map((a) => `<span class="tag honey">${a}</span>`).join('')}</div>`
-          : `<p class="muted" style="margin:8px 0 0">Tell the Concierge what you're trying to solve. Filters and options will show up here, only the ones that matter for your problem.</p>`}
+      <div class="ctx-pin">
+        <div class="row between"><h4 style="margin:0">${icon('cart')} Cart ${T.lines.length ? `<span class="count-badge">${T.lines.reduce((a, l) => a + l.qty, 0)}</span>` : ''}</h4><button class="icon-btn ctx-close" onclick="EB.closeOverlays()" aria-label="Close">${icon('x')}</button></div>
+        ${T.lines.length ? `<div style="margin-top:6px">${T.lines.map((l) => `<div class="cart-line"><div class="em">${l.emoji || '📦'}</div><div class="nm"><b>${esc(l.item)}</b><span class="muted">${esc(l.vendor)}</span> ${l.offer ? '<span class="tag green" style="font-size:10.5px">offer</span>' : ''}</div>
+            <div style="text-align:right"><div class="num" style="font-weight:700;font-size:13.5px">${money(l.price * l.qty)}</div>${l.list_price > l.price ? `<s class="muted num" style="font-size:11.5px">${money(l.list_price * l.qty)}</s>` : ''}<div class="qty"><button data-dec="${l.id}" aria-label="Decrease">−</button><span>${l.qty}</span><button data-inc="${l.id}" aria-label="Increase">+</button></div></div></div>`).join('')}</div>
+          <div class="stack" style="gap:3px;font-size:13px;margin-top:8px">
+            <div class="row between"><span>Subtotal</span><span class="num">${money(T.sub)}</span></div>
+            ${T.saved > 0 ? `<div class="row between up"><span>Saved with live offers</span><span class="num">−${money(T.saved)}</span></div>` : ''}
+            <div class="row between"><span>Shipping</span><span class="num">${T.ship ? money(T.ship) : 'Free'}</span></div>
+            <div class="row between"><span>Est. tax</span><span class="num">${money(T.tax)}</span></div>
+            <div class="row between"><label class="row" style="gap:6px"><input type="checkbox" id="crTog" ${S.autoApply ? 'checked' : ''}> Game credits</label><span class="num up">−${money(T.credit)}</span></div>
+            <div class="row between" style="font-weight:700;font-size:15px"><span>Total</span><span class="num">${money(T.total)}</span></div></div>
+          <button class="btn primary block" style="margin-top:10px" id="coBtn">${icon('lock')} Checkout · ${money(T.total)}</button>`
+        : `<p class="muted" style="margin:6px 0 0;font-size:13px">Your cart is empty. Add items from the chat. Live-offer prices are kept.</p>`}
       </div>
-      ${P ? `
       <div class="ctx-section">
-        <h4>Price range <span class="num" id="rangeLbl">up to ${money(S.maxPrice || 350, 0)}</span></h4>
-        <input type="range" min="20" max="400" step="5" value="${S.maxPrice || 350}" id="range" aria-label="Maximum price">
-        <h4 style="margin-top:14px">Must-haves</h4>
-        <div class="chips" id="must">${[...new Set(P.items.flatMap((i) => i.tags || []))].slice(0, 6).map((t, i) => `<button class="chip ${i === 0 ? 'on' : ''}">${t}</button>`).join('')}</div>
-        <button class="btn block" style="margin-top:14px" id="browseBtn">${icon('search')} Browse this context only (${allItems().length})</button>
+        <h4>For you <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:500">context + memory</span></h4>
+        ${sug.map((s, i) => `<div class="sugg"><div class="em">${s.it.e}</div><div class="nm"><b>${esc(s.it.name)}</b><div class="muted">${s.it.free ? 'Free' : money(eff(s.it), 0)} · ${esc(s.it.vendor)}</div><div class="why">${esc(s.why)}</div></div><button class="btn sm" data-sg="${i}">${s.it.free ? 'Turn on' : '+ Add'}</button></div>`).join('')}
       </div>
       <div class="ctx-section">
+        <h4>Current context</h4>
+        ${P ? `<div class="ctx-title">${P.title}</div><div class="chips" style="margin-top:10px">${Object.values(S.answers).map((a) => `<span class="tag honey">${a}</span>`).join('')}</div>
+          <h4 style="margin-top:14px">Price range <span class="num" id="rangeLbl">up to ${money(S.maxPrice || 350, 0)}</span></h4>
+          <input type="range" min="20" max="400" step="5" value="${S.maxPrice || 350}" id="range" aria-label="Maximum price">
+          <h4 style="margin-top:14px">Must-haves</h4>
+          <div class="chips" id="must">${[...new Set(P.items.flatMap((i) => i.tags || []))].slice(0, 6).map((t, i) => `<button class="chip ${i === 0 ? 'on' : ''}">${t}</button>`).join('')}</div>
+          <button class="btn block" style="margin-top:14px" id="browseBtn">${icon('search')} Browse this context only (${allItems().length})</button>`
+          : `<p class="muted" style="margin:0;font-size:13.5px">Tell the Concierge what you're trying to solve. Only the filters that matter for your problem will show up here.</p>`}
+      </div>
+      ${P ? `<div class="ctx-section">
         <h4>Live offers <span class="tag ${S.dealOpen ? 'green' : ''}">${S.dealOpen ? '<i class="dot live"></i> Deal Room open' : 'Closed'}</span></h4>
         ${offers.length ? `<div class="offer-list">${offers.map(([id, o]) => `<div class="offer"><div class="o-main"><div class="o-title">${find(id).vendor}</div><div class="o-sub">${o.perks.join(' · ') || 'Price offer'}</div></div><div><div class="o-price">${money(o.price, 0)}</div><div class="timer" data-exp="${o.exp}"></div></div></div>`).join('')}</div>` : '<p class="muted" style="margin:0;font-size:13.5px">No offers yet. Vendors can send offers while you decide.</p>'}
-        <button class="btn primary block" style="margin-top:12px" id="askBtn2">${icon('bolt')} Ask for a better deal</button>
-      </div>` : ''}
+        <button class="btn block" style="margin-top:12px" id="askBtn2">${icon('bolt')} Ask for a better deal</button></div>` : ''}
       <div class="ctx-section">
-        <h4>Wallet</h4>
-        <div class="row between"><div><div class="ctx-title num">${money(S.wallet)}</div><div class="muted" style="font-size:12.5px">Game credits · auto-applied at checkout</div></div><button class="btn sm" onclick="EB.setNav('play');document.querySelector('[data-nav=play]').click()">${icon('play')} Play</button></div>
+        <div class="row between"><div><h4 style="margin:0 0 4px">Wallet</h4><div class="ctx-title num">${money(walletBal())}</div><div class="muted" style="font-size:12px">Game credits · ${playsLeft()} plays left today</div></div><button class="btn sm" data-goplay>${icon('play')} Play</button></div>
       </div>
-      <div class="ctx-section">
-        <h4>Honest AI</h4>
-        <div style="font-size:13px" class="stack">
-          <div class="row">${icon('check')}<span>Ranked by fit for <i>your</i> problem, not by ad spend</span></div>
-          <div class="row">${icon('check')}<span>Sponsored items in this shortlist: <b>0</b></span></div>
-          <div class="row">${icon('check')}<span>Offers are personalised to this session and expire</span></div>
-        </div>
-      </div>`;
+      <div class="ctx-section"><div class="stack" style="font-size:12.5px;gap:6px">
+        <div class="row">${icon('check')}<span>Ranked by fit for <i>your</i> problem, not by ad spend</span></div>
+        <div class="row">${icon('lock')}<span>Memory & personal details stay on your devices. <a href="#" data-sync>See what's synced</a></span></div></div></div>`;
     const r = $('#range');
     if (r) r.oninput = () => { S.maxPrice = +r.value; $('#rangeLbl').textContent = 'up to ' + money(r.value, 0); };
     $$('#must .chip').forEach((c) => (c.onclick = () => c.classList.toggle('on')));
     const b = $('#browseBtn'); if (b) b.onclick = browse;
     const a = $('#askBtn2'); if (a) a.onclick = () => { EB.closeOverlays(); EB.view('chat'); EB.setNav('chat'); askDeal(); };
+    $$('[data-sg]', ctx).forEach((x) => (x.onclick = () => addToCart(sug[+x.dataset.sg].it)));
+    $$('[data-inc]', ctx).forEach((x) => (x.onclick = async () => { const l = D.get('cart', x.dataset.inc); await D.put('cart', { ...l, qty: l.qty + 1 }); renderContext(); }));
+    $$('[data-dec]', ctx).forEach((x) => (x.onclick = async () => { const l = D.get('cart', x.dataset.dec); if (l.qty <= 1) await D.del('cart', l.id); else await D.put('cart', { ...l, qty: l.qty - 1 }); renderContext(); }));
+    const t = $('#crTog'); if (t) t.onchange = () => { S.autoApply = t.checked; renderContext(); };
+    const co = $('#coBtn'); if (co) co.onclick = () => { EB.closeOverlays(); checkout(); };
+    $('[data-goplay]', ctx).onclick = () => { EB.closeOverlays(); EB.setNav('play'); nav('play'); };
+    $('[data-sync]', ctx).onclick = (e) => { e.preventDefault(); EB.syncView(); };
+    updWalletChip();
   }
+  const esc = EB.esc;
 
   /* ---------------- product cards ---------------- */
   function productCard(it, { compact = false } = {}) {
@@ -183,10 +290,10 @@
         <div class="vendor">${it.vendor} · <span class="stars">★</span> ${it.rating} (${it.reviews.toLocaleString()})</div>
         <div class="price"></div>
         ${compact ? '' : `<div class="why"><b>Why:</b> ${it.why}</div>`}
-        <div class="actions"><button class="btn sm primary" data-act="buy">Buy</button><button class="btn sm" data-act="details">Details</button></div>
+        <div class="actions"><button class="btn sm primary" data-act="buy">${icon('cart')} Add</button><button class="btn sm" data-act="details">Details</button></div>
       </div></div>`);
     paintCard(el, it);
-    el.querySelector('[data-act=buy]').onclick = () => checkout(it);
+    el.querySelector('[data-act=buy]').onclick = () => addToCart(it);
     el.querySelector('[data-act=details]').onclick = () => details(it);
     return el;
   }
@@ -213,9 +320,9 @@
           ${[['Lumbar support', 92], ['Comfort for 8+ h', 84], ['Value for money', 71]].map(([l, v]) => `<div style="margin:8px 0"><div class="row between" style="font-size:13px"><span>${l}</span><b>${v}</b></div><div class="meter g"><i style="width:${v}%"></i></div></div>`).join('')}
         </div>
         <div class="card flat"><div class="card-title" style="margin-bottom:6px">Delivery & returns</div><div class="muted" style="font-size:14px">Ships from ${it.vendor} in 1–2 days · Free returns within 30 days · Sold by ${it.vendor}, a verified eBuzz seller</div></div>
-        <button class="btn primary block" id="dBuy">Buy for ${money(eff(it), 0)}</button>
+        <button class="btn primary block" id="dBuy">Add to cart · ${money(eff(it), 0)}</button>
       </div>`);
-    $('#dBuy', body).onclick = () => { EB.closeOverlays(); checkout(it); };
+    $('#dBuy', body).onclick = () => { EB.closeOverlays(); addToCart(it); };
   }
 
   function browse() {
@@ -250,7 +357,7 @@
     ({
       back: () => startProblem('back'), sleep: () => startProblem('sleep'), pet: () => startProblem('pet'),
       play: () => { chat.bot('Opening <b>Play & Win</b>. Good luck! 🍯'); setTimeout(() => { EB.setNav('play'); renderPlay(); }, 900); },
-      wallet: () => chat.bot(`You have <b>${money(S.wallet)}</b> in game credits. They're applied automatically at checkout (up to 10% of an order). <a href="#" onclick="document.querySelector('[data-nav=wallet]').click();return false">Open wallet →</a>`),
+      wallet: () => chat.bot(`You have <b>${money(walletBal())}</b> in game credits. They're applied automatically at checkout (up to 10% of an order). <a href="#" onclick="document.querySelector('[data-nav=wallet]').click();return false">Open wallet →</a>`),
       deal: askDeal, browse: () => { browse(); chat.bot('Opened the browse drawer, filtered to your problem only.'); },
       risers: showRisers, compare: compare,
       reset: () => { S.problem = null; S.offers = {}; S.dealOpen = false; S.answers = {}; renderContext(); chat.bot('Sure. What else can I help you solve?'); suggestDefault(); },
@@ -267,7 +374,9 @@
     if (/compare|difference|vs/.test(s)) return compare();
     if (/game|play|win/.test(s)) return route(null, 'play');
     if (/wallet|credit|balance/.test(s)) return route(null, 'wallet');
-    if (/track|order|where/.test(s)) return chat.bot(S.orders.length ? `Your latest order <b>${S.orders[0].id}</b> is <b>${S.orders[0].status}</b>. The Track Shipping agent will message you if anything changes.` : "You don't have any open orders. Once you buy, I'll track it here and warn you about delays.");
+    if (/track|order|where/.test(s)) { const o = D.all('orders', 'ORDER BY date DESC, id DESC LIMIT 1')[0]; return chat.bot(o ? `Your latest order <b>${o.id}</b> (${esc(o.item)}) is <b>${o.status}</b>. The Track Shipping agent will message you if anything changes.` : "You don't have any orders yet."); }
+    if (/cart|checkout|pay/.test(s)) return checkout();
+    if (/dashboard|spent|history|transactions/.test(s)) { chat.bot('Opening your dashboard, which has the full transaction list.'); return setTimeout(() => { EB.setNav('dash'); nav('dash'); }, 600); }
     if (/return|refund/.test(s)) return chat.bot('I can start a return for any order within its return window. The Returns agent will make a prepaid label and refund you when the carrier scans it. (Demo)');
     chat.bot(`I'm a prototype, so I know a few problems in depth right now. Try one of these, or just describe what's going on in your own words.`);
     EB.setSuggest(welcomeChips, (c) => route(c.label, c.go));
@@ -376,11 +485,13 @@
     const it = find(o.id); if (!it) return;
     const prev = S.offers[o.id];
     S.offers[o.id] = { price: o.price, perks: o.perks || [], exp: Date.now() + 15 * 60000 };
+    const cl = cartRows().find((l) => l.sku === o.id);
+    if (cl && o.price < cl.price) D.put('cart', { ...cl, price: o.price, offer: 1 }).then(() => { renderContext(); EB.toast(`Cart updated: ${it.vendor} offer applied`); });
     setStatus(o.id, `<b>${money(o.price, 0)}</b> ${o.perks && o.perks.length ? '+ ' + o.perks.join(' + ') : ''}`);
     repaintAll(); renderContext();
     const saved = it.price - o.price;
     const card = h(`<div class="offer new"><div class="avatar ${it.c === 'v' ? 'v' : it.c === 'g' ? 'g' : ''}">${it.vendor[0]}</div><div class="o-main"><div class="o-title">${it.vendor}: ${it.name}</div><div class="o-sub">${[`Save ${money(saved, 0)}`, ...(o.perks || [])].join(' · ')} · <span class="timer" data-exp="${S.offers[o.id].exp}"></span></div></div><div class="o-price">${money(o.price, 0)}</div><button class="btn sm primary">Accept</button></div>`);
-    $('button', card).onclick = () => checkout(it);
+    $('button', card).onclick = () => addToCart(it);
     chat.bot([`${icon('bell')} ${o.proactive ? `<b>${it.vendor}</b> noticed you're deciding and sent a private offer:` : prev ? `<b>${it.vendor}</b> improved its offer:` : `New offer from <b>${it.vendor}</b>:`}`, card], { delay: 300 });
     bus.emit('deal:board', sessionPayload());
   }
@@ -396,43 +507,48 @@
   bus.on('deal:pass', (o) => { if (o.sid === S.sid) setStatus(o.id, 'Passed on this one'); });
   bus.on('deal:sync', () => { if (S.dealOpen) bus.emit('deal:session', sessionPayload()); });
 
-  /* ---------------- checkout ---------------- */
-  async function checkout(it) {
+  /* ---------------- checkout (whole cart) ---------------- */
+  async function checkout() {
     EB.view('chat'); EB.setNav('chat');
-    const price = eff(it), ship = S.offers[it.id] && S.offers[it.id].perks.includes('Free shipping') ? 0 : it.price > 100 ? 0 : 5.99;
-    const credit = () => (S.autoApply ? Math.min(S.wallet, +(price * 0.1).toFixed(2)) : 0);
-    const tax = +(price * 0.0725).toFixed(2);
-    const card = h(`<div class="card"><div class="card-head"><div class="card-title">${icon('box')} Checkout</div><span class="tag">Secure · processed by payment partner</span></div>
-      <div class="row" style="gap:12px"><div class="product" style="width:64px;border:0"><div class="img ${it.c}" style="font-size:30px;border-radius:10px">${it.e}</div></div><div style="flex:1"><b>${it.name}</b><div class="muted" style="font-size:13px">Sold & shipped by ${it.vendor} · arrives Tue, Sep 23</div></div></div>
-      <div class="sep"></div>
-      <div class="stack" style="gap:6px;font-size:14px" id="lines"></div>
-      <div class="set-row"><div>Use game credits<small>Up to 10% of the order · balance ${money(S.wallet)}</small></div><label class="toggle"><input type="checkbox" ${S.autoApply ? 'checked' : ''} id="cr"><span></span></label></div>
-      <div class="row wrap" style="font-size:13px;gap:14px"><span>${icon('home')} Home · 221 Pine St, Austin TX</span><span>💳 Visa ···· 4242</span></div>
-      <div class="card-foot"><button class="btn primary" id="place">Place order</button><button class="btn ghost" id="cancel">Not yet</button></div></div>`);
-    const lines = () => {
-      const c = credit();
-      $('#lines', card).innerHTML = `
-        <div class="row between"><span>Item${S.offers[it.id] ? ` <span class="tag green">live offer</span>` : ''}</span><span class="num">${S.offers[it.id] ? `<s class="muted">${money(it.price)}</s> ` : ''}${money(price)}</span></div>
-        <div class="row between"><span>Shipping</span><span class="num">${ship ? money(ship) : 'Free'}</span></div>
-        <div class="row between"><span>Est. tax</span><span class="num">${money(tax)}</span></div>
-        ${c ? `<div class="row between" style="color:var(--green)"><span>Game credits</span><span class="num">−${money(c)}</span></div>` : ''}
-        <div class="row between" style="font-weight:700;font-size:16px"><span>Total</span><span class="num">${money(price + ship + tax - c)}</span></div>`;
+    if (!cartRows().length) return chat.bot('Your cart is empty. Add something from a shortlist or from the "For you" suggestions on the right.');
+    const pr = profile();
+    const card = h(`<div class="card"><div class="card-head"><div class="card-title">${icon('lock')} Checkout</div><span class="tag">Card handled by payment partner · never stored by eBuzz</span></div>
+      <div data-lines></div><div class="sep"></div><div class="stack" style="gap:6px;font-size:14px" data-sum></div>
+      <div class="set-row"><div>Use game credits<small>Up to 10% of the order · balance ${money(walletBal())}</small></div><label class="toggle"><input type="checkbox" ${S.autoApply ? 'checked' : ''} data-cr><span></span></label></div>
+      <div class="row wrap" style="font-size:13px;gap:14px"><span>${icon('home')} ${esc(pr.address || '')}, ${esc(pr.city || '')} ${esc(pr.state || '')}</span><span>💳 ${esc(pr.card_label || '')}</span><span class="tag violet">${icon('lock')} address shared only with the shipping vendor</span></div>
+      <div class="card-foot"><button class="btn primary" data-place>Place order</button><button class="btn ghost" data-cancel>Keep shopping</button></div></div>`);
+    const paint = () => {
+      const T = cartTotals();
+      $('[data-lines]', card).innerHTML = T.lines.map((l) => `<div class="row" style="gap:12px;padding:6px 0"><div class="em" style="width:42px;height:42px;border-radius:10px;display:grid;place-items:center;font-size:22px;background:var(--surface-2)">${l.emoji}</div><div style="flex:1"><b>${esc(l.item)}</b> ${l.qty > 1 ? `×${l.qty}` : ''}<div class="muted" style="font-size:12.5px">Sold & shipped by ${esc(l.vendor)} · arrives Tue, Sep 23 ${l.offer ? '<span class="tag green">live offer</span>' : ''}</div></div><div class="num" style="text-align:right">${l.list_price > l.price ? `<s class="muted">${money(l.list_price * l.qty)}</s><br>` : ''}${money(l.price * l.qty)}</div></div>`).join('');
+      $('[data-sum]', card).innerHTML = `
+        <div class="row between"><span>Subtotal</span><span class="num">${money(T.sub)}</span></div>
+        ${T.saved > 0 ? `<div class="row between up"><span>Saved with live offers</span><span class="num">−${money(T.saved)}</span></div>` : ''}
+        <div class="row between"><span>Shipping</span><span class="num">${T.ship ? money(T.ship) : 'Free'}</span></div>
+        <div class="row between"><span>Est. tax (${esc(pr.state || '')})</span><span class="num">${money(T.tax)}</span></div>
+        ${T.credit ? `<div class="row between up"><span>Game credits</span><span class="num">−${money(T.credit)}</span></div>` : ''}
+        <div class="row between" style="font-weight:700;font-size:16px"><span>Total</span><span class="num">${money(T.total)}</span></div>`;
     };
-    await chat.bot([S.offers[it.id] ? `Great choice. Your <b>${it.vendor}</b> offer is locked in for this checkout.` : 'Here\'s your checkout:', card]);
-    lines();
-    $('#cr', card).onchange = (e) => { S.autoApply = e.target.checked; lines(); };
-    $('#cancel', card).onclick = () => { card.style.opacity = .5; $$('button', card).forEach((b) => (b.disabled = true)); chat.bot('No problem. Your offers stay valid until their timers run out.'); };
-    $('#place', card).onclick = async () => {
+    await chat.bot([`Here's your checkout for ${cartRows().length} item${cartRows().length > 1 ? 's' : ''}. Live-offer prices are locked in:`, card]);
+    paint();
+    $('[data-cr]', card).onchange = (e) => { S.autoApply = e.target.checked; paint(); renderContext(); };
+    $('[data-cancel]', card).onclick = () => { card.style.opacity = .5; $$('button,input', card).forEach((b) => (b.disabled = true)); };
+    $('[data-place]', card).onclick = async () => {
       $$('button,input', card).forEach((b) => (b.disabled = true));
-      const c = credit(), total = +(price + ship + tax - c).toFixed(2);
-      if (c) { S.wallet = +(S.wallet - c).toFixed(2); S.history.unshift({ d: 'Today', t: `Used on ${it.name}`, a: -c }); saveWallet(); updWalletChip(); }
-      const id = 'EB-' + Math.floor(20500 + Math.random() * 400);
-      S.orders.unshift({ id, name: it.name, e: it.e, c: it.c, vendor: it.vendor, total, status: 'Confirmed', date: 'Today' });
-      EB.sstore.set('eb-orders', S.orders);
-      bus.emit('order:placed', { id, vendor: it.vendor, item: it.name, gmv: price, total, credit: c, offer: !!S.offers[it.id], sid: S.sid });
-      bus.emit('deal:accepted', { sid: S.sid, id: it.id, vendor: it.vendor, price });
+      const T = cartTotals(), ids = [], today = D.today();
+      let creditLeft = T.credit;
+      const rows = T.lines.map((l, i) => {
+        const id = 'EB-' + Math.floor(20500 + Math.random() * 9000); ids.push(id);
+        const share = i === T.lines.length - 1 ? creditLeft : +(T.credit * (l.price * l.qty) / T.sub).toFixed(2); creditLeft = +(creditLeft - share).toFixed(2);
+        const tax = +(l.price * l.qty * 0.0825).toFixed(2);
+        return { id, user_id: UID, date: today, item: l.item, emoji: l.emoji, sku: l.sku, vendor: l.vendor, qty: l.qty, list_price: l.list_price, price: l.price, credit: share, tax, total: +(l.price * l.qty + tax - share).toFixed(2), status: 'Confirmed', via: l.offer ? 'Deal Room' : 'Concierge', ship_to: `${pr.address}, ${pr.city} ${pr.state} ${pr.zip}` };
+      });
+      await D.put('orders', rows);
+      if (T.credit) await D.put('wallet_tx', { id: D.id('W'), user_id: UID, date: today, type: 'spend', label: `Used on ${ids.join(', ')}`, amount: -T.credit });
+      for (const l of T.lines) await D.del('cart', l.id);
+      rows.forEach((o) => { bus.emit('order:placed', { id: o.id, vendor: o.vendor, item: o.item, gmv: o.price * o.qty, total: o.total, credit: o.credit, offer: o.via === 'Deal Room', sid: S.sid }); bus.emit('deal:accepted', { sid: S.sid, id: o.sku, vendor: o.vendor, price: o.price }); });
       S.dealOpen = false; renderContext();
-      await chat.bot([`<div class="ok-note">${icon('check')} Order <b>${id}</b> placed: ${money(total)}. ${c ? `You used ${money(c)} in game credits.` : ''}</div>`, `The <b>Track Shipping</b> agent will keep you posted here. You also earned <b>+${Math.round(price)} Buzz points</b> 🍯. ${S.problem === 'back' ? 'Want to finish <b>Step 2</b> of your plan (monitor riser)?' : ''}`]);
+      const pts = Math.round(T.sub);
+      await chat.bot([`<div class="ok-note">${icon('check')} ${rows.length > 1 ? `${rows.length} orders` : 'Order'} <b>${ids.join(', ')}</b> placed: ${money(T.total)}.${T.credit ? ` You used ${money(T.credit)} in game credits.` : ''}${T.saved > 0 ? ` You saved ${money(T.saved)} with live offers.` : ''}</div>`, `The <b>Track Shipping</b> agent will keep you posted here. You earned <b>+${pts} Buzz points</b> 🍯. Every order is also listed in your <a href="#" data-dash>Dashboard</a>. ${S.problem === 'back' ? 'Want to finish <b>Step 2</b> of your plan (monitor riser)?' : ''}`]).then((b) => { const d = $('[data-dash]', b); if (d) d.onclick = (e) => { e.preventDefault(); EB.setNav('dash'); nav('dash'); }; });
       EB.setSuggest([{ label: '🖥️ Yes, show monitor risers', go: 'risers' }, { label: '📦 Track my order', go: 'track' }, { label: '🎮 Play to win more credits', go: 'play' }, { label: '🆕 Different problem', go: 'reset' }], (c2) => (c2.go === 'track' ? (chat.user(c2.label), chat.onText('track')) : route(c2.label, c2.go)));
     };
   }
@@ -447,7 +563,8 @@
       </div>
       <div class="sponsor" style="margin-bottom:16px"><span class="sp-label">Sponsored</span><span style="font-size:22px">🪑</span><div style="flex:1"><b>Sitwell Aria</b>: sit better, live better. Beat level 3 to unlock <b>15% off</b>.</div><button class="btn sm">Learn more</button></div>
       <div class="products" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr))" id="games"></div>
-      <div class="card flat" style="margin-top:18px"><div class="row between wrap"><div><b>${S.plays} of 5 plays left today</b><div class="muted" style="font-size:13px">We cap daily plays to keep it fun. Credits expire after 60 days and can cover up to 10% of an order.</div></div><button class="btn sm" id="rules">Official rules & odds</button></div></div>
+      <div class="card flat" style="margin-top:18px"><div class="row between wrap" style="gap:12px"><div><b>${playsLeft()} of ${limits().user.plays} plays left today</b><div class="muted" style="font-size:13px">Win limits keep it fun and the prize pool fair. Credits expire after 60 days and can cover up to 10% of an order.</div></div><button class="btn sm" id="rules">Official rules & odds</button></div>
+        <div class="grid2" style="grid-template-columns:repeat(3,1fr);margin-top:12px">${winUsage().map((u) => `<div><div class="row between" style="font-size:12.5px"><span>${u.label} win limit</span><b class="num">${money(u.used)} / ${money(u.cap)}</b></div><div class="meter ${u.used >= u.cap ? 'r' : 'g'}"><i style="width:${Math.min(100, (u.used / u.cap) * 100)}%"></i></div></div>`).join('')}</div></div>
       <div id="gameArea"></div>`);
     const games = [
       { id: 'crush', name: 'Buzz Crush', e: '🍯', c: '', d: 'Match 3 in 15 moves. Score 1,500+ to win credits.', prize: 'Up to $1.00', live: true },
@@ -457,16 +574,31 @@
     ];
     games.forEach((g) => {
       const el = h(`<div class="product"><div class="img ${g.c}">${g.e}</div><div class="info"><div class="name">${g.name}</div><div class="vendor">${g.d}</div><div class="row between" style="margin-top:6px"><span class="tag honey">${g.prize}</span>${g.live ? '<button class="btn sm primary">Play</button>' : '<span class="tag">Coming soon</span>'}</div></div></div>`);
-      const b = $('button', el); if (b) b.onclick = () => (S.plays <= 0 ? EB.toast('Daily limit reached. Come back tomorrow!') : g.id === 'crush' ? crush() : memory());
+      const b = $('button', el); if (b) b.onclick = () => (playsLeft() <= 0 ? EB.toast('Daily play limit reached. Come back tomorrow!') : g.id === 'crush' ? crush() : memory());
       $('#games', v).append(el);
     });
-    $('#rules', v).onclick = () => EB.modal(`<h3>Official rules (summary)</h3><ul style="padding-left:18px;line-height:1.65;font-size:14px"><li><b>No purchase necessary</b> to play or win. A purchase does not improve your chances.</li><li>Buzz Crush and Memory Flip are <b>games of skill</b>. Credits depend on your score, not luck.</li><li>Prizes are eBuzz store credits (no cash value), valid 60 days, max 10% of an order.</li><li>Open to US residents 18+. Void where prohibited.</li><li>Daily prize pool = 40% of that day's Play-zone ad revenue. When it runs out, games stay free to play but pay no credits until the next day.</li><li>Bots, multiple accounts and automation are not allowed.</li></ul><button class="btn primary" onclick="EB.closeOverlays()">Close</button>`);
+    $('#rules', v).onclick = () => EB.modal(`<h3>Official rules (summary)</h3><ul style="padding-left:18px;line-height:1.65;font-size:14px"><li><b>No purchase necessary</b> to play or win. A purchase does not improve your chances.</li><li>Buzz Crush and Memory Flip are <b>games of skill</b>. Credits depend on your score, not luck.</li><li>Prizes are eBuzz store credits (no cash value), valid 60 days, max 10% of an order.</li><li>Open to US residents 18+. Void where prohibited.</li><li>Win limits per player: ${money(limits().user.daily)}/day, ${money(limits().user.weekly)}/week, ${money(limits().user.monthly)}/month; ${limits().user.plays} plays/day. Set by eBuzz Admin.</li><li>Daily prize pool = 40% of that day's Play-zone ad revenue. When it runs out, games stay free to play but pay no credits until the next day.</li><li>Bots, multiple accounts and automation are not allowed.</li></ul><button class="btn primary" onclick="EB.closeOverlays()">Close</button>`);
   }
   setInterval(() => { pool = Math.max(0, pool - Math.random() * 0.6); const p = $('#pool'); if (p) p.textContent = money(pool); }, 2500);
 
+  /* win limits (daily / weekly / monthly), configured centrally in the Admin portal */
+  function winUsage() {
+    const L = limits().user, wins = D.all('wallet_tx').filter((x) => x.type === 'game' && x.amount > 0);
+    const since = (d) => wins.filter((x) => x.date >= d).reduce((a, x) => a + x.amount, 0);
+    const monthStart = D.today().slice(0, 8) + '01';
+    return [{ label: 'Daily', used: since(D.today()), cap: L.daily }, { label: 'Weekly', used: since(D.daysAgo(6)), cap: L.weekly }, { label: 'Monthly', used: since(monthStart), cap: L.monthly }];
+  }
   function award(amount, label) {
-    S.plays = Math.max(0, S.plays - 1); EB.sstore.set('eb-plays', S.plays);
-    if (amount > 0) { S.wallet = +(S.wallet + amount).toFixed(2); S.history.unshift({ d: 'Today', t: label, a: amount }); saveWallet(); updWalletChip(); pool -= amount; bus.emit('game:prize', { amount }); }
+    EB.sstore.set(playsKey(), EB.sstore.get(playsKey(), 0) + 1);
+    const room = Math.max(0, Math.min(...winUsage().map((u) => u.cap - u.used)));
+    const granted = +Math.min(amount, room).toFixed(2);
+    const hit = winUsage().find((u) => u.cap - u.used <= amount);
+    if (granted > 0) {
+      D.put('wallet_tx', { id: D.id('G'), user_id: UID, date: D.today(), type: 'game', label, amount: granted }).then(() => { renderContext(); });
+      pool -= granted; bus.emit('game:prize', { amount: granted });
+    }
+    const note = amount > granted ? `Your ${hit ? hit.label.toLowerCase() : ''} win limit (${money(hit ? hit.cap : 0)}) is reached${granted ? `, so only ${money(granted)} was added` : ''}. Games stay free to play.` : '';
+    return { granted, note };
   }
 
   function crush() {
@@ -516,9 +648,9 @@
       if (moves <= 0) end();
     }
     function end() {
-      const prize = score >= 8000 ? 1 : score >= 5000 ? 0.5 : score >= 3000 ? 0.25 : score >= 1500 ? 0.1 : 0;
-      award(prize, `Buzz Crush: ${score} pts`);
-      EB.modal(`<div style="text-align:center"><div style="font-size:54px">${prize ? '🏆' : '🍯'}</div><h2>${prize ? `You won ${money(prize)}!` : 'So close!'}</h2><p class="muted">Score ${score}. ${prize ? 'Credits added to your wallet and applied automatically at your next checkout.' : 'Score 1,500+ to win credits. Try again.'}</p><div class="row" style="justify-content:center"><button class="btn primary" onclick="EB.closeOverlays()">Nice</button></div><p class="muted" style="font-size:11.5px;margin-top:12px">Prize funded by Play-zone advertising · Skill game · No purchase necessary</p></div>`);
+      const won = score >= 8000 ? 1 : score >= 5000 ? 0.5 : score >= 3000 ? 0.25 : score >= 1500 ? 0.1 : 0;
+      const { granted: prize, note } = award(won, `Buzz Crush: ${score} pts`);
+      EB.modal(`<div style="text-align:center"><div style="font-size:54px">${prize ? '🏆' : '🍯'}</div><h2>${prize ? `You won ${money(prize)}!` : won ? 'Limit reached' : 'So close!'}</h2><p class="muted">Score ${score}. ${prize ? 'Credits added to your wallet and applied automatically at your next checkout.' : won ? '' : 'Score 1,500+ to win credits. Try again.'} ${note}</p><div class="row" style="justify-content:center"><button class="btn primary" onclick="EB.closeOverlays()">Nice</button></div><p class="muted" style="font-size:11.5px;margin-top:12px">Prize funded by Play-zone advertising · Skill game · No purchase necessary</p></div>`);
       renderContext();
     }
     $('#adBtn').onclick = async () => {
@@ -552,9 +684,9 @@
             if (cards[open[0]] === cards[open[1]]) open.forEach((x) => done.add(x));
             open = []; lock = false; draw();
             if (done.size === cards.length) {
-              const prize = flips <= 16 ? 0.5 : flips <= 22 ? 0.25 : flips <= 30 ? 0.1 : 0;
-              award(prize, `Memory Flip: ${flips} flips`);
-              EB.modal(`<div style="text-align:center"><div style="font-size:54px">${prize ? '🏆' : '🃏'}</div><h2>${prize ? `+${money(prize)} credits` : 'All pairs found!'}</h2><p class="muted">${flips} flips.</p><button class="btn primary" onclick="EB.closeOverlays()">Done</button></div>`);
+              const won = flips <= 16 ? 0.5 : flips <= 22 ? 0.25 : flips <= 30 ? 0.1 : 0;
+              const { granted: prize, note } = award(won, `Memory Flip: ${flips} flips`);
+              EB.modal(`<div style="text-align:center"><div style="font-size:54px">${prize ? '🏆' : '🃏'}</div><h2>${prize ? `+${money(prize)} credits` : 'All pairs found!'}</h2><p class="muted">${flips} flips. ${note}</p><button class="btn primary" onclick="EB.closeOverlays()">Done</button></div>`);
               renderContext();
             }
           }
@@ -565,61 +697,130 @@
     draw();
   }
 
+  /* ---------------- Dashboard (full lists live here, not in the chat) ---------------- */
+  const TX_TYPES = { order: 'Order', game: 'Game win', referral: 'Referral', promo: 'Promo credit', spend: 'Credits used', refund: 'Credits refunded', expired: 'Credits expired' };
+  function allTx() {
+    const orders = D.all('orders').map((o) => ({ date: o.date, type: o.status === 'Refunded' ? 'Refund' : 'Order', desc: `${o.emoji || ''} ${o.item}${o.qty > 1 ? ' ×' + o.qty : ''}`, vendor: o.vendor, via: o.via, ref: o.id, amount: o.status === 'Refunded' ? 0 : -o.total, saved: Math.max(0, (o.list_price - o.price) * o.qty), status: o.status }));
+    const credits = D.all('wallet_tx').map((w) => ({ date: w.date, type: TX_TYPES[w.type] || w.type, desc: w.label || '', vendor: '-', via: 'Wallet', ref: w.id, amount: w.amount, saved: 0, status: 'Posted', credit: true }));
+    return [...orders, ...credits];
+  }
+  function renderDash() {
+    const orders = D.all('orders'), wtx = D.all('wallet_tx'), live = orders.filter((o) => o.status !== 'Refunded');
+    const spent = live.reduce((a, o) => a + o.total, 0), saved = live.reduce((a, o) => a + Math.max(0, (o.list_price - o.price) * o.qty), 0);
+    const earned = wtx.filter((x) => x.amount > 0 && x.type !== 'refund').reduce((a, x) => a + x.amount, 0), used = -wtx.filter((x) => x.type === 'spend').reduce((a, x) => a + x.amount, 0);
+    const deal = live.filter((o) => o.via === 'Deal Room');
+    const months = Array.from({ length: 12 }, (_, i) => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - (11 - i)); return d.toISOString().slice(0, 7); });
+    const byMonth = months.map((m) => live.filter((o) => o.date.startsWith(m)).reduce((a, o) => a + o.total, 0));
+    const vendors = Object.entries(live.reduce((a, o) => ((a[o.vendor] = (a[o.vendor] || 0) + o.total), a), {})).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const v = EB.view('dash', `
+      <div class="row between wrap" style="margin-bottom:16px;gap:10px"><div><h1 style="font-size:28px">Your dashboard</h1><div class="muted">Everything you've bought, saved and won. Computed on this device from your local database.</div></div><button class="btn sm" data-sync>${icon('db')} Data & devices</button></div>
+      ${EB.kpis([['Total spent', money(spent, 0), `${live.length} orders`], ['Saved with live offers', money(saved, 0), `${deal.length} Deal Room orders`, 'up'], ['Avg saving (Deal Room)', (deal.length ? (deal.reduce((a, o) => a + (o.list_price - o.price) / o.list_price, 0) / deal.length) * 100 : 0).toFixed(1) + '%'], ['Credits earned', money(earned), `${wtx.filter((x) => x.type === 'game').length} game wins`], ['Credits used', money(used)], ['Wallet balance', money(walletBal()), `${playsLeft()} plays left today`], ['Buzz points', S.points.toLocaleString(), 'Gold at 2,000'], ['Avg order', money(live.length ? spent / live.length : 0)]])}
+      <div class="grid2" style="margin-top:16px">
+        <div class="card"><div class="card-title" style="margin-bottom:10px">Spend by month</div>${EB.bars(byMonth.map((x) => x || 0.01))}<div class="row between muted" style="font-size:11px;margin-top:4px"><span>${months[0]}</span><span>${months[11]}</span></div></div>
+        <div class="card"><div class="card-title" style="margin-bottom:10px">Top vendors</div>${vendors.map(([n, t]) => `<div style="margin:8px 0"><div class="row between" style="font-size:13px"><span>${esc(n)}</span><b class="num">${money(t, 0)}</b></div><div class="meter"><i style="width:${(t / vendors[0][1]) * 100}%"></i></div></div>`).join('')}</div>
+      </div>
+      <div class="card" style="margin-top:16px"><div class="card-head"><div class="card-title">All transactions</div><span class="muted" style="font-size:13px">Orders, refunds and every wallet movement</span></div><div data-table></div></div>`);
+    const tbl = EB.dataTable({
+      rows: allTx(), filterKey: 'type', csv: 'ebuzz-my-transactions.csv', sumKey: 'amount', sumLabel: 'Net',
+      columns: [
+        { key: 'date', label: 'Date' },
+        { key: 'type', label: 'Type', fmt: (t) => `<span class="tag ${t === 'Order' ? '' : t === 'Game win' ? 'honey' : t === 'Refund' || t === 'Credits refunded' ? 'blue' : t === 'Credits expired' ? 'red' : 'green'}">${t}</span>` },
+        { key: 'desc', label: 'Description' },
+        { key: 'vendor', label: 'Vendor' },
+        { key: 'via', label: 'Channel' },
+        { key: 'ref', label: 'Ref', fmt: (x) => `<span class="mono muted" style="font-size:12px">${esc(x)}</span>` },
+        { key: 'saved', label: 'Saved', right: true, fmt: (x) => (x ? `<span class="up">${money(x)}</span>` : '') },
+        { key: 'amount', label: 'Amount', right: true, fmt: (x, r) => `<span class="num ${x > 0 ? 'up' : ''}">${x > 0 ? '+' : x < 0 ? '−' : ''}${money(Math.abs(x))}</span>` },
+      ],
+    });
+    $('[data-table]', v).append(tbl);
+    $('[data-sync]', v).onclick = () => EB.syncView();
+  }
+
   /* ---------------- Wallet / Orders / Account ---------------- */
   function renderWallet() {
+    const wtx = D.all('wallet_tx').sort((a, b) => b.date.localeCompare(a.date));
+    const monthStart = D.today().slice(0, 8) + '01';
+    const month = wtx.filter((x) => x.date >= monthStart && x.amount > 0);
     EB.view('wallet', `
       <h1 style="font-size:28px;margin-bottom:16px">Wallet</h1>
       <div class="card honey-edge"><div class="row between wrap" style="gap:16px">
-        <div><div class="muted" style="font-weight:600;font-size:13px">AVAILABLE CREDITS</div><div style="font-family:var(--display);font-size:44px;font-weight:700" class="num">${money(S.wallet)}</div><div class="muted" style="font-size:13px">+ $0.50 pending (referral) · $1.10 expires Oct 30</div></div>
-        <div class="stack" style="min-width:220px"><div class="set-row" style="border:0;padding:0"><div>Auto-apply at checkout<small>Up to 10% of each order</small></div><label class="toggle"><input type="checkbox" ${S.autoApply ? 'checked' : ''} id="aa"><span></span></label></div><button class="btn primary" onclick="document.querySelector('[data-nav=play]').click()">${icon('play')} Win more credits</button></div>
+        <div><div class="muted" style="font-weight:600;font-size:13px">AVAILABLE CREDITS</div><div style="font-family:var(--display);font-size:44px;font-weight:700" class="num">${money(walletBal())}</div><div class="muted" style="font-size:13px">Credits expire 60 days after you earn them</div></div>
+        <div class="stack" style="min-width:220px"><div class="set-row" style="border:0;padding:0"><div>Auto-apply at checkout<small>Up to 10% of each order</small></div><label class="toggle"><input type="checkbox" ${S.autoApply ? 'checked' : ''} id="aa"><span></span></label></div><button class="btn primary" data-play>${icon('play')} Win more credits</button></div>
       </div></div>
-      <div class="kpis" style="margin:16px 0">${[['Buzz points', S.points.toLocaleString(), 'Gold at 2,000'], ['Earned this month', '$6.85', 'from 11 games + 1 referral'], ['Saved with live offers', '$84.00', 'across 3 orders']].map((k) => `<div class="kpi"><div class="l">${k[0]}</div><div class="v">${k[1]}</div><div class="d muted">${k[2]}</div></div>`).join('')}</div>
-      <div class="card"><div class="card-title" style="margin-bottom:12px">History</div>${EB.table(['Date', 'Activity', 'Amount'], S.history.map((x) => [x.d, x.t, `<span class="${x.a > 0 ? 'up' : ''}">${x.a > 0 ? '+' : '−'}${money(Math.abs(x.a))}</span>`]), { right: [2] })}</div>
-      <div class="card flat" style="margin-top:16px"><div class="card-title" style="margin-bottom:6px">How credits work</div><p class="muted" style="margin:0;font-size:14px">Credits come from games (paid for by ads), referrals and promotions. They have no cash value, expire 60 days after you earn them, and can cover up to 10% of any order. Refunded orders return credits to your wallet.</p></div>`);
-    $('#aa').onchange = (e) => (S.autoApply = e.target.checked);
+      <div class="kpis" style="margin:16px 0">${[['Earned this month', money(month.reduce((a, x) => a + x.amount, 0)), `${month.length} credits`], ...winUsage().map((u) => [`${u.label} win limit`, `${money(u.used)} / ${money(u.cap)}`, u.used >= u.cap ? 'limit reached' : 'available'])].map((k) => `<div class="kpi"><div class="l">${k[0]}</div><div class="v">${k[1]}</div><div class="d muted">${k[2]}</div></div>`).join('')}</div>
+      <div class="card"><div class="card-head"><div class="card-title">Recent activity</div><button class="btn sm" data-all>Full history in Dashboard →</button></div>${EB.table(['Date', 'Activity', 'Amount'], wtx.slice(0, 8).map((x) => [x.date, esc(x.label || x.type), `<span class="${x.amount > 0 ? 'up' : ''}">${x.amount > 0 ? '+' : '−'}${money(Math.abs(x.amount))}</span>`]), { right: [2] })}</div>
+      <div class="card flat" style="margin-top:16px"><div class="card-title" style="margin-bottom:6px">How credits work</div><p class="muted" style="margin:0;font-size:14px">Credits come from games (paid for by ads), referrals and promotions. They have no cash value, expire 60 days after you earn them, and can cover up to 10% of any order. Win limits are set by eBuzz so the prize pool stays fair.</p></div>`);
+    $('#aa').onchange = (e) => { S.autoApply = e.target.checked; renderContext(); };
+    $('[data-play]').onclick = () => { EB.setNav('play'); nav('play'); };
+    $('[data-all]').onclick = () => { EB.setNav('dash'); nav('dash'); };
   }
 
   function renderOrders() {
-    const demo = [{ id: 'EB-20481', name: 'Hushly Fan White-Noise Machine', e: '🔊', c: 'b', vendor: 'Hushly', total: 38.9, status: 'Delivered', date: 'Sep 10' }];
-    const list = [...S.orders, ...demo];
+    const list = D.all('orders', 'ORDER BY date DESC, id DESC LIMIT 6');
     const steps = ['Confirmed', 'Packed', 'Shipped', 'Out for delivery', 'Delivered'];
-    EB.view('orders', `<h1 style="font-size:28px;margin-bottom:16px">Orders</h1><div class="stack" style="gap:14px">${list.map((o) => {
-      const at = steps.indexOf(o.status);
-      return `<div class="card"><div class="row between wrap"><div class="row"><div class="product" style="width:56px;border:0"><div class="img ${o.c}" style="font-size:26px;border-radius:10px">${o.e}</div></div><div><b>${o.name}</b><div class="muted" style="font-size:13px">${o.id} · ${o.vendor} · ${o.date} · ${money(o.total)}</div></div></div><span class="tag ${o.status === 'Delivered' ? 'green' : 'honey'}">${o.status}</span></div>
-      <div class="row" style="gap:4px;margin-top:14px">${steps.map((s, i) => `<div style="flex:1"><div class="meter ${i <= at ? 'g' : ''}"><i style="width:${i <= at ? 100 : 0}%"></i></div><div style="font-size:11px;margin-top:4px" class="${i <= at ? '' : 'muted'}">${s}</div></div>`).join('')}</div>
-      <div class="card-foot"><button class="btn sm" onclick="EB.toast('Track Shipping agent: on schedule, ETA Tue Sep 23')">${icon('truck')} Track</button><button class="btn sm" onclick="EB.toast('Returns agent: prepaid label emailed (demo)')">${icon('ret')} Return</button><button class="btn sm ghost" onclick="EB.toast('Opening support chat…')">Get help</button></div></div>`;
+    EB.view('orders', `<div class="row between wrap" style="margin-bottom:16px"><h1 style="font-size:28px">Recent orders</h1><button class="btn sm" data-all>All ${D.count('orders')} orders in Dashboard →</button></div><div class="stack" style="gap:14px">${list.map((o) => {
+      const at = o.status === 'Refunded' ? -1 : steps.indexOf(o.status);
+      return `<div class="card"><div class="row between wrap"><div class="row"><div class="em" style="width:52px;height:52px;border-radius:12px;display:grid;place-items:center;font-size:26px;background:var(--surface-2)">${o.emoji || '📦'}</div><div><b>${esc(o.item)}</b>${o.qty > 1 ? ' ×' + o.qty : ''}<div class="muted" style="font-size:13px">${o.id} · ${esc(o.vendor)} · ${o.date} · ${money(o.total)}${o.via === 'Deal Room' ? ' · <span class="tag green">Deal Room</span>' : ''}</div></div></div><span class="tag ${o.status === 'Delivered' ? 'green' : o.status === 'Refunded' ? 'blue' : 'honey'}">${o.status}</span></div>
+      ${o.status === 'Refunded' ? '' : `<div class="row" style="gap:4px;margin-top:14px">${steps.map((s, i) => `<div style="flex:1"><div class="meter ${i <= at ? 'g' : ''}"><i style="width:${i <= at ? 100 : 0}%"></i></div><div style="font-size:11px;margin-top:4px" class="${i <= at ? '' : 'muted'}">${s}</div></div>`).join('')}</div>`}
+      <div class="card-foot"><button class="btn sm" onclick="EB.toast('Track Shipping agent: on schedule')">${icon('truck')} Track</button><button class="btn sm" onclick="EB.toast('Returns agent: prepaid label created (demo)')">${icon('ret')} Return</button><button class="btn sm ghost" onclick="EB.toast('Opening support chat…')">Get help</button></div></div>`;
     }).join('')}</div>`);
+    $('[data-all]').onclick = () => { EB.setNav('dash'); nav('dash'); };
   }
 
   function renderAccount() {
-    EB.view('account', `
-      <h1 style="font-size:28px;margin-bottom:16px">Account & preferences</h1>
+    const p = profile(), pf = D.get('prefs', UID) || {}, vals = (() => { try { return JSON.parse(pf.values_json || '[]'); } catch { return []; } })();
+    const lockTag = `<span class="cls vault" title="Encrypted on your device; eBuzz servers only store ciphertext">${icon('lock')} E2EE</span>`;
+    const v = EB.view('account', `
+      <h1 style="font-size:28px;margin-bottom:6px">Account & preferences</h1>
+      <p class="muted" style="margin:0 0 16px">Your personal details live in the SQLite database on your devices. They sync end-to-end encrypted: eBuzz can't read them. Only your state (for sales tax) is stored centrally.</p>
       <div class="grid2">
-        <div class="card"><div class="card-title" style="margin-bottom:12px">Profile</div>
-          <div class="stack"><label class="field">Name<input value="Maya Rodriguez"></label><label class="field">Email<input value="maya@example.com"></label>
-          <label class="field">Default address<select><option>Home · 221 Pine St, Austin TX</option><option>Work · 500 Congress Ave</option></select></label>
-          <div class="row between" style="font-size:14px"><span>💳 Visa ···· 4242 <span class="muted">(stored by payment partner)</span></span><button class="btn sm ghost">Manage</button></div></div></div>
-        <div class="card"><div class="card-title" style="margin-bottom:12px">Shopping preferences</div>
+        <div class="card"><div class="card-head"><div class="card-title">Profile</div>${lockTag}</div>
+          <div class="stack" data-profile>
+            <label class="field">Name<input data-f="name" value="${esc(p.name || '')}"></label>
+            <label class="field">Email<input data-f="email" value="${esc(p.email || '')}"></label>
+            <label class="field">Phone<input data-f="phone" value="${esc(p.phone || '')}"></label>
+            <label class="field">Street address<input data-f="address" value="${esc(p.address || '')}"></label>
+            <div class="grid2" style="grid-template-columns:2fr 1fr 1fr"><label class="field">City<input data-f="city" value="${esc(p.city || '')}"></label><label class="field">State <span class="cls central">central</span><input data-f="state" value="${esc(p.state || '')}" maxlength="2"></label><label class="field">ZIP<input data-f="zip" value="${esc(p.zip || '')}"></label></div>
+            <div class="row between" style="font-size:14px"><span>💳 ${esc(p.card_label || '')} <span class="muted">(token held by payment partner)</span></span><button class="btn sm primary" data-save>Save</button></div></div></div>
+        <div class="card"><div class="card-head"><div class="card-title">Shopping preferences</div>${lockTag}</div>
           <div class="stack">
-            <div><div class="field" style="margin-bottom:6px">Budget style</div><div class="seg" data-seg><button>Value</button><button class="on">Balanced</button><button>Premium</button></div></div>
-            <div><div class="field" style="margin-bottom:6px">Delivery speed</div><div class="seg" data-seg><button class="on">Standard</button><button>Fast</button><button>Fastest</button></div></div>
-            <div><div class="field" style="margin-bottom:6px">Values</div><div class="chips" data-multi><button class="chip on">Sustainable</button><button class="chip">Small brands</button><button class="chip on">Long warranty</button><button class="chip">Made in USA</button></div></div>
-            <label class="field">Brands to avoid<input placeholder="e.g. BrandX" value="QuickBuy Basics"></label>
+            <div><div class="field" style="margin-bottom:6px">Budget style</div><div class="seg" data-seg="budget_style">${['Value', 'Balanced', 'Premium'].map((x) => `<button class="${pf.budget_style === x ? 'on' : ''}">${x}</button>`).join('')}</div></div>
+            <div><div class="field" style="margin-bottom:6px">Delivery speed</div><div class="seg" data-seg="delivery">${['Standard', 'Fast', 'Fastest'].map((x) => `<button class="${pf.delivery === x ? 'on' : ''}">${x}</button>`).join('')}</div></div>
+            <div><div class="field" style="margin-bottom:6px">Values</div><div class="chips" data-multi>${['Sustainable', 'Small brands', 'Long warranty', 'Made in USA'].map((x) => `<button class="chip ${vals.includes(x) ? 'on' : ''}">${x}</button>`).join('')}</div></div>
+            <label class="field">Brands to avoid<input data-avoid value="${esc(pf.avoid || '')}"></label>
           </div></div>
-        <div class="card"><div class="card-title" style="margin-bottom:6px">Deals & notifications</div>
-          ${[['Live offers while I\'m deciding', 'Vendors can send private offers during a session', true], ['Price-drop alerts', 'For items you saved', true], ['Daily game reminder', 'Off by default: we don\'t nag', false], ['Email receipts', '', true]].map(([a, b, on]) => `<div class="set-row"><div>${a}<small>${b}</small></div><label class="toggle"><input type="checkbox" ${on ? 'checked' : ''}><span></span></label></div>`).join('')}</div>
-        <div class="card"><div class="card-title" style="margin-bottom:6px">Privacy & AI</div>
-          ${[['Personalised offers', 'Uses your problem, budget band and history. Vendors never see your identity.', true], ['Remember my conversations', 'Improves recommendations. Delete any time.', true], ['Use my data to train models', 'Off by default', false]].map(([a, b, on]) => `<div class="set-row"><div>${a}<small>${b}</small></div><label class="toggle"><input type="checkbox" ${on ? 'checked' : ''}><span></span></label></div>`).join('')}
-          <div class="card-foot"><button class="btn sm">Download my data</button><button class="btn sm danger ghost">Delete account</button></div></div>
+        <div class="card"><div class="card-head"><div class="card-title">What eBuzz remembers</div><span class="cls local">${icon('lock')} this device only</span></div>
+          <p class="muted" style="margin:0 0 8px;font-size:13px">The Concierge uses these memories to personalise suggestions. They never leave your device.</p>
+          <div data-mem></div>
+          <div class="row" style="margin-top:10px"><input class="btn sm" style="flex:1;text-align:left;border-radius:10px" placeholder="Add something, e.g. 'allergic to wool'" data-newmem><button class="btn sm" data-addmem>Add</button></div></div>
+        <div class="card"><div class="card-head"><div class="card-title">Privacy, devices & consent</div></div>
+          ${[['offers_opt_in', 'Personalised live offers', 'Vendors see your problem and budget band, never your identity. (Stored centrally as a consent flag.)'], ['memory_opt_in', 'Remember my conversations', 'On this device only'], ['train_opt_in', 'Use my data to improve models', 'Off by default']].map(([k, a, b]) => `<div class="set-row"><div>${a}<small>${b}</small></div><label class="toggle"><input type="checkbox" data-pref="${k}" ${pf[k] === '1' ? 'checked' : ''}><span></span></label></div>`).join('')}
+          <div class="card-foot"><button class="btn sm primary" data-sync>${icon('db')} Data & devices</button><button class="btn sm" data-export>Download my data</button><button class="btn sm danger ghost" onclick="EB.toast('Account deletion requires confirmation by email (demo)')">Delete account</button></div></div>
       </div>`);
-    $$('[data-seg]').forEach((s) => $$('button', s).forEach((b) => (b.onclick = () => { $$('button', s).forEach((x) => x.classList.remove('on')); b.classList.add('on'); })));
-    $$('[data-multi] .chip').forEach((c) => (c.onclick = () => c.classList.toggle('on')));
+    const renderMem = () => { $('[data-mem]', v).innerHTML = memories().map((m) => `<div class="set-row"><span style="font-size:13.5px">${esc(m.text)}</span><button class="btn sm ghost danger" data-delmem="${m.id}" aria-label="Forget">${icon('x')}</button></div>`).join('') || '<p class="muted">Nothing remembered.</p>'; $$('[data-delmem]', v).forEach((b) => (b.onclick = async () => { await D.del('memory', b.dataset.delmem); renderMem(); renderContext(); EB.toast('Forgotten'); })); };
+    renderMem();
+    const savePrefs = async () => { const cur = D.get('prefs', UID) || { id: UID }; const patch = { ...cur, values_json: JSON.stringify($$('[data-multi] .chip.on', v).map((c) => c.textContent)), avoid: $('[data-avoid]', v).value }; $$('[data-seg]', v).forEach((s) => (patch[s.dataset.seg] = ($('button.on', s) || {}).textContent)); $$('[data-pref]', v).forEach((c) => (patch[c.dataset.pref] = c.checked ? '1' : '0')); await D.put('prefs', patch); EB.toast('Preferences saved · synced to your devices (encrypted)'); };
+    $$('[data-seg]', v).forEach((s) => $$('button', s).forEach((b) => (b.onclick = () => { $$('button', s).forEach((x) => x.classList.remove('on')); b.classList.add('on'); savePrefs(); })));
+    $$('[data-multi] .chip', v).forEach((c) => (c.onclick = () => { c.classList.toggle('on'); savePrefs(); }));
+    $$('[data-pref]', v).forEach((c) => (c.onchange = savePrefs));
+    $('[data-avoid]', v).onchange = savePrefs;
+    $('[data-save]', v).onclick = async () => { const np = { ...profile() }; $$('[data-f]', v).forEach((i) => (np[i.dataset.f] = i.value.trim())); await D.put('profile', np); EB.toast('Profile saved · encrypted before sync'); };
+    $('[data-addmem]', v).onclick = async () => { const t = $('[data-newmem]', v).value.trim(); if (!t) return; await D.put('memory', { id: D.id('mem'), kind: 'note', text: t, date: D.today() }); $('[data-newmem]', v).value = ''; renderMem(); renderContext(); };
+    $('[data-sync]', v).onclick = () => EB.syncView();
+    $('[data-export]', v).onclick = () => { const blob = { profile: profile(), prefs: D.get('prefs', UID), orders: D.all('orders'), wallet: D.all('wallet_tx'), memory: memories() }; const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(blob, null, 2)], { type: 'application/json' })); a.download = 'my-ebuzz-data.json'; a.click(); EB.toast('Exported from this device'); };
   }
 
-  /* ---------------- boot ---------------- */
-  renderContext();
-  const hello = h(`<div class="card flat" style="background:var(--surface-2);border:0"><div class="row between wrap" style="gap:10px"><div style="font-size:14px">🍯 You have <b>${money(S.wallet)}</b> in credits · <b>${S.plays}</b> free plays today</div><button class="btn sm" onclick="document.querySelector('[data-nav=play]').click()">${icon('play')} Play & Win</button></div></div>`);
-  chat.bot(['<h2 style="font-size:24px;margin-bottom:6px">Hi Maya 👋</h2><p>What are you trying to <b>solve</b> today? Describe the problem in your own words. I\'ll suggest a fix, shortlist the best products, and get vendors to compete for your order.</p>', hello], { delay: 400 });
-  suggestDefault();
-  if (location.hash === '#play') { EB.setNav('play'); renderPlay(); }
+  /* ---------------- boot: open the local SQLite, pull from central, then start ---------------- */
+  EB.bindSyncChip && D.init({ persona: 'customer', seed }).then(() => {
+    EB.bindSyncChip();
+    renderContext();
+    const hello = h(`<div class="card flat" style="background:var(--surface-2);border:0"><div class="row between wrap" style="gap:10px"><div style="font-size:14px">🍯 You have <b>${money(walletBal())}</b> in credits · <b>${playsLeft()}</b> free plays today${cartRows().length ? ` · <b>${cartRows().length}</b> item(s) in your cart` : ''}</div><button class="btn sm" onclick="document.querySelector('[data-nav=play]').click()">${icon('play')} Play & Win</button></div></div>`);
+    chat.bot([`<h2 style="font-size:24px;margin-bottom:6px">Hi ${esc((profile().name || 'there').split(' ')[0])} 👋</h2><p>What are you trying to <b>solve</b> today? Describe the problem in your own words. I'll suggest a fix, shortlist the best products, and get vendors to compete for your order.</p>`, hello], { delay: 400 });
+    suggestDefault();
+    if (location.hash === '#play') { EB.setNav('play'); renderPlay(); }
+    if (location.hash === '#dash') { EB.setNav('dash'); renderDash(); }
+    // another device (or the Admin portal changing win limits) updated synced data
+    D.on((e) => { if (e.type !== 'remote') return; renderContext(); if (['dash', 'wallet', 'orders', 'account', 'play'].includes(S.view)) nav(S.view); });
+  });
 })();

@@ -15,20 +15,19 @@
   };
   const savedTheme = store.get('eb-theme', null);
   if (savedTheme) document.documentElement.dataset.theme = savedTheme;
-  EB.toggleTheme = () => {
-    const dark = document.documentElement.dataset.theme
-      ? document.documentElement.dataset.theme === 'dark'
-      : matchMedia('(prefers-color-scheme: dark)').matches;
-    const next = dark ? 'light' : 'dark';
-    document.documentElement.dataset.theme = next;
-    store.set('eb-theme', next);
+  EB.isDark = () => (document.documentElement.dataset.theme ? document.documentElement.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches);
+  EB.setTheme = (mode) => {
+    document.documentElement.dataset.theme = mode;
+    store.set('eb-theme', mode);
+    document.querySelectorAll('.theme-seg button').forEach((b) => b.classList.toggle('on', b.dataset.mode === mode));
   };
+  EB.toggleTheme = () => EB.setTheme(EB.isDark() ? 'light' : 'dark');
 
   /* ---------- helpers ---------- */
   EB.h = (html) => { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.children.length === 1 ? t.content.firstElementChild : t.content; };
   EB.$ = (s, r = document) => r.querySelector(s);
   EB.$$ = (s, r = document) => [...r.querySelectorAll(s)];
-  EB.money = (n, d = 2) => '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+  EB.money = (n, d = 2) => (Number(n) < -0.004 ? '-' : '') + '$' + Math.abs(Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
   EB.k = (n) => n >= 1e6 ? '$' + (n / 1e6).toFixed(2) + 'M' : n >= 1e3 ? '$' + (n / 1e3).toFixed(1) + 'k' : EB.money(n);
   EB.sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   EB.esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -81,6 +80,12 @@
     target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/>',
     trophy: '<path d="M8 4h8v5a4 4 0 0 1-8 0V4ZM8 6H4v1a3 3 0 0 0 4 3M16 6h4v1a3 3 0 0 1-4 3M12 13v4M8 21h8M9 17h6v4H9z"/>',
     search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
+    moon: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z"/>',
+    cart: '<circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.6 12.2a1 1 0 0 0 1 .8h9.7a1 1 0 0 0 1-.8L21 7H6"/>',
+    grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+    lock: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+    db: '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
+    download: '<path d="M12 4v12M7 11l5 5 5-5M4 20h16"/>',
   };
   EB.icon = (n, cls = '') => `<svg class="i ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n] || ''}</svg>`;
 
@@ -110,23 +115,26 @@
     { id: 'customer', label: 'Shopper', href: 'customer.html' },
     { id: 'vendor', label: 'Deal Room · Vendor Mgr', href: 'vendor.html' },
     { id: 'supplier', label: 'Supplier Hub', href: 'supplier.html' },
-    { id: 'finance', label: 'Finance', href: 'finance.html' },
+    { id: 'admin', label: 'Admin', href: 'admin.html' },
     { id: 'agents', label: 'Agent Ops', href: 'agents.html' },
   ];
 
   EB.shell = function ({ persona, user, rail, onNav, context = '', placeholder = 'Ask anything…', note = '' }) {
     document.body.classList.add('app');
+    document.body.dataset.persona = persona;
     document.body.innerHTML = `
       <header class="topbar">
         <a class="brand" href="../index.html" title="eBuzz.ai home">${EB.logo()}<span>eBuzz<b>.ai</b></span></a>
         <nav class="persona-switch" aria-label="Switch persona">${PERSONAS.map((p) => `<a href="${p.href}" class="${p.id === persona ? 'on' : ''}">${p.label}</a>`).join('')}</nav>
         <div class="spacer"></div>
-        <button class="icon-btn" id="themeBtn" title="Toggle dark mode" aria-label="Toggle dark mode">${EB.icon('sun')}</button>
+        <button class="sync-chip" id="syncChip" title="Local SQLite database and sync status"><i class="dot"></i><span class="lbl" id="syncLbl">Local DB</span></button>
+        <div class="theme-seg" role="group" aria-label="Theme"><button data-mode="light">${EB.icon('sun')}<span class="lbl">Light</span></button><button data-mode="dark">${EB.icon('moon')}<span class="lbl">Dark</span></button></div>
+        <button class="icon-btn m-theme" id="themeBtn" title="Toggle dark mode" aria-label="Toggle dark mode">${EB.icon('sun')}</button>
         <button class="icon-btn ctx-toggle" id="ctxBtn" title="Context panel" aria-label="Open context panel">${EB.icon('panel')}</button>
         <div class="user-chip"><div class="avatar ${user.cls || ''}">${user.initials}</div><div class="u-text"><b>${user.name}</b><div class="muted" style="font-size:12px;line-height:1.2">${user.role}</div></div></div>
       </header>
       <div class="shell">
-        <nav class="rail" aria-label="Sections">${rail.map((r) => `<button data-nav="${r.id}" title="${r.label}">${EB.icon(r.icon)}<span>${r.label}</span>${r.badge ? `<i class="badge">${r.badge}</i>` : ''}</button>`).join('')}</nav>
+        <nav class="rail" aria-label="Sections">${rail.map((r) => r.sep ? '<div class="rail-sep"></div>' : `<button data-nav="${r.id}" title="${r.label}">${EB.icon(r.icon)}<span>${r.label}</span>${r.badge ? `<i class="badge">${r.badge}</i>` : ''}</button>`).join('')}</nav>
         <main class="main">
           <section class="view on" data-view="chat">
             <div class="scroll" id="chatScroll"><div class="thread" id="thread"></div></div>
@@ -146,6 +154,8 @@
       <div class="scrim" id="scrim"></div>`;
 
     EB.$('#themeBtn').onclick = EB.toggleTheme;
+    EB.$$('.theme-seg button').forEach((b) => { b.classList.toggle('on', b.dataset.mode === (EB.isDark() ? 'dark' : 'light')); b.onclick = () => EB.setTheme(b.dataset.mode); });
+    EB.$('#syncChip').onclick = () => EB.syncView && EB.syncView();
     const ctx = EB.$('#context'), scrim = EB.$('#scrim');
     EB.openContext = () => { ctx.classList.add('on'); scrim.classList.add('on'); };
     EB.closeOverlays = () => { ctx.classList.remove('on'); scrim.classList.remove('on'); EB.$$('.drawer.on,.modal.on').forEach((d) => d.classList.remove('on')); };

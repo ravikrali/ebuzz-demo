@@ -18,15 +18,23 @@ eBuzz.ai is a concept for a chat-first marketplace:
 | [`docs/BUSINESS_PLAN.md`](docs/BUSINESS_PLAN.md) | Full business plan: validation & recommendations, competition, revenue model, unit economics, GTM, agent architecture, operations, tech, legal/regulatory, team, 5-year financials, KPIs, risks, milestones |
 | `index.html` | Landing page |
 | `docs.html` | Renders the thesis and plan with a table of contents |
-| `app/customer.html` | **Shopper**: chat concierge, live offers, contextual browse, checkout with credits, playable match-3 & memory games, Wallet, Orders, Account & Preferences |
+| `app/customer.html` | **Shopper**: chat concierge, live offers, contextual browse, a persistent **cart & checkout + "For you" suggestions** pane (context + on-device memory), **Dashboard** of every transaction, playable games with win limits, Wallet, Orders, Account & Preferences |
 | `app/vendor.html` | **Vendor Manager, Deal Room**: live sessions, anonymised price-to-beat, AI-suggested offers, *Need 5 min*, auto-bid rules, win/loss, Deal Boost |
-| `app/supplier.html` | **Supplier Hub**: contracts & e-sign, SKU upload with AI validation, inventory, orders, returns, payouts, compliance |
-| `app/finance.html` | **Finance Manager**: GMV/take rate, revenue mix, payout-batch approval, prize-pool governor, reconciliation, tax, forecast |
+| `app/supplier.html` | **Supplier Hub**: **Dashboard** of every transaction, **Team & RBAC**, contracts & e-sign, SKU upload with AI validation, inventory, orders, payouts, compliance |
+| `app/admin.html` | **Admin** (formerly Finance): **Dashboard** of every platform transaction, **daily/weekly/monthly win limits**, **Staff & RBAC** (Territory Managers, CS Associates…), payout approval, reconciliation, tax, forecast |
 | `app/agents.html` | **Agent Ops / COO**: agent fleet, approval queue (video, Top10, outreach), Problem Radar, incidents, autonomy policies |
 
 ## Try the live negotiation
 
-Open **Shopper** and **Deal Room** in two tabs of the same browser. As the shopper, pick *"My back hurts after working from home"*, then tap **Ask for a better deal**. The request appears in the Deal Room. Send an offer (or *Need 5 min*) and it shows up in the shopper's chat. Accept it and check out: the Deal Room records the win, and the Finance console and Agent Ops event stream update live. The tabs talk to each other through `BroadcastChannel`. There is no backend.
+Open **Shopper** and **Deal Room** in two tabs of the same browser. As the shopper, pick *"My back hurts after working from home"*, then tap **Ask for a better deal**. The request appears in the Deal Room. Send an offer (or *Need 5 min*) and it shows up in the shopper's chat. Accept it and check out: the Deal Room records the win, and the Admin and Supplier dashboards and the Agent Ops event stream update live. The tabs talk to each other through `BroadcastChannel`. There is no backend.
+
+## Local-first data (SQLite on every device)
+
+- Every portal opens its own **SQLite** database in the browser (sql.js/WebAssembly, saved in IndexedDB) and syncs it with a simulated central store (`assets/js/db.js`).
+- **PII and personal financial details are encrypted on the device** (WebCrypto AES-256-GCM) before sync. The central store only holds ciphertext plus the columns the platform strictly needs (amounts for settlement, state for tax, roles for access control).
+- Concierge memory is **device-only** and never syncs.
+- Click the sync chip in any portal's top bar to see the field-by-field classification, the raw central record, a SQL console and the sync log. Choose **Open as Phone** (`?device=phone`) to watch a second device pull and decrypt the data.
+- Themes: every portal has its own accent colour, with **Light** (bluish gray) and **Dark** (gray) modes.
 
 ## Run locally
 
