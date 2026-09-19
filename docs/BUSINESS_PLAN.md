@@ -89,8 +89,8 @@ Each portal has its own accent colour (Shopper honey, Deal Room violet, Supplier
 
 | Persona | Portal | Core jobs |
 |---|---|---|
-| **Shopper** | Customer Concierge | Describe problem → get a plan and shortlist → compare → receive/ask for offers. A **persistent right pane** has the **cart & checkout** at the top and **"For you" suggestions** from the current context and on-device memory. Also: Dashboard (all KPIs and every transaction), Play & Win, Wallet, Orders, Account & Preferences |
-| **Supplier (catalog/ops admin)** | Supplier Hub | Dashboard (all KPIs and every order, refund, fee and payout), **staff & role-based access control**, contracts & e-sign, SKU/inventory upload, orders & fulfilment, returns, payouts, compliance documents |
+| **Shopper** | Customer Concierge | Describe problem → get a plan and shortlist (as cards, or a **list** with description, price, rating, **Match score** and a link to the vendor's **storefront page**) → compare → receive/ask for offers. A **persistent right pane** has the **cart & checkout** at the top and **"For you" suggestions** from the current context and on-device memory. Also: Dashboard (all KPIs and every transaction), Play & Win, Wallet, Orders, Account & Preferences |
+| **Supplier (catalog/ops admin)** | Supplier Hub | Dashboard (all KPIs and every order, refund, fee and payout), **Buzz Feed replies** to reviews of its products, **self-serve ads & promotions**, a **landing page** (storefront) builder, **staff & role-based access control**, contracts & e-sign, SKU/inventory upload, orders & fulfilment, returns, payouts, compliance documents |
 | **Vendor Manager (pricing/sales)** | Deal Room | Live shopper sessions, competitor "price to beat", make offers, "need 5 min", auto-bid rules, win/loss analytics, Deal Boost budget |
 | **Admin (eBuzz)** | Admin Console | Dashboard (platform KPIs and every transaction, with customers shown as pseudonymous IDs), **daily / weekly / monthly win limits**, **staff & RBAC** (Territory Managers, Customer Service Associates, Finance, Content, Compliance), payout approval, reconciliation, tax, forecast |
 | **Agent Ops / COO (eBuzz)** | Agent Control Tower | Monitor all agents, human-approval queue (videos, contracts, high-value refunds), policies, incidents |
@@ -148,19 +148,27 @@ Each portal has its own accent colour (Shopper honey, Deal Room violet, Supplier
 
 ### 4.7 Buzz Feed (social)
 
-A single feed appears in three portals, with different tools in each:
+A single feed appears in all four business-facing and shopper portals, with different tools in each:
 
 | Portal | What people do in the feed |
 |---|---|
-| **Shopper** | Post reviews (1–5 stars, linked to a purchase for a **Verified purchase** badge), stories, tips and questions with photos. Like, comment and report. **Share** to TikTok and Instagram (caption + link copied, or a 9:16 story image made on the device), Facebook, X, the native share sheet, or copy link. "Get offer" on a Sponsored post applies the promo price in the cart. |
+| **Shopper** | Post reviews (1–5 stars, linked to a purchase for a **Verified purchase** badge), stories, tips, questions and **platform feedback** with photos. See **eBuzz platform updates** and the status of feedback (Planned, In progress, Shipped…). Like, comment and report. **Share** to TikTok and Instagram (caption + link copied, or a 9:16 story image made on the device), Facebook, X, the native share sheet, or copy link. "Get offer" on a Sponsored post applies the promo price in the cart. |
 | **Vendor (Deal Room)** | See mentions of the brand and the average rating, **reply as the brand** (replies are labelled; vendors can't edit or remove reviews), and build **Sponsored promotions** (product, promo price checked against the floor, message, target problems, daily budget). Promotions go live only after eBuzz ad review. |
-| **Admin** | **Moderation queue** (AI-flagged or reported posts: approve, add a disclosure label, remove), **promotion ad review**, **banner ad settings** (Google Ad Manager / Microsoft Advertising / direct-sold toggles, banner every N posts, per-session cap, blocked categories, contextual-only targeting locked on), plus feed KPIs and ad revenue. |
+| **Supplier** | **Respond to customer reviews** of the products it sold (Needs reply / My product reviews / My promotions), with an AI-drafted reply the supplier edits before posting, plus response-rate KPIs. From the Supplier Dashboard it can **buy promotions and ads** and **build its own landing page** (below). |
+| **Admin** | **Live feed** with a composer to **post platform updates** as the *eBuzz Team* (labelled Official), a **Feedback** inbox to **answer general platform feedback** publicly and set a visible status, a **Moderation queue** (AI-flagged or reported posts: approve, add a disclosure label, remove), **promotion ad review**, **banner ad settings** (Google Ad Manager / Microsoft Advertising / direct-sold toggles, banner every N posts, per-session cap, blocked categories, contextual-only targeting locked on), **campaign approvals** for supplier-bought placements, plus feed KPIs and ad revenue. |
 
 **Rules that keep the feed trustworthy**
 - A post is labelled *Verified purchase* only if it's linked to a real order, and *Received product free* when the author ticks the incentive box (FTC).
 - The AI moderator pre-screens every post (spam, off-platform selling, harassment, undisclosed incentives, personal data). Risky posts wait for a human (target: under 2 hours).
 - Sponsored posts are always labelled. Banner ads say "Ad · network" and explain "Why this ad?". No personal data goes to ad networks; ads load only after consent.
 - Posts are public by design under a display name. Contact details and order data are never included (see 12.1).
+
+### 4.8 Supplier growth tools: self-serve ads and landing pages
+
+| Tool | What the supplier gets | Guardrails |
+|---|---|---|
+| **Ads & promotions store** | Buy a *Sponsored feed post* (CPM), *Direct banner* (CPM), *Deal Boost* (CPC), *Top10 list placement* (weekly), *Sponsored game level* (weekly) or *Store spotlight* (CPM). Pick product, promo price, target problems, budget, bid and duration; see estimated impressions, clicks and orders; track spend, CTR and status; pause/resume. | Always labelled Sponsored/Ad; contextual (problem-cluster) targeting only; promo prices checked against list and floor; placements reviewed by eBuzz (Admin → Buzz Feed → Promotion review / Campaigns) before going live; billed as delivered, netted from payouts. Deal Boost never reorders fit-ranked results. |
+| **Landing page (storefront)** | A branded page with logo, colour, headline, tagline, about, products, services (e.g. assembly, free video fitting), shipping/returns/warranty policies and Buzz Feed reviews, with a live preview, draft and publish. Shoppers open it from any vendor name (list view, cards, compare table, product details, feed posts) or a shareable link. | The Listing QA agent blocks prices above catalog, medical claims and off-platform contact requests. Only published pages sync to shoppers. |
 
 **Why it matters:** shopper shares bring low-cost visitors, verified reviews make recommendations more trustworthy, vendors get another paid placement, and banner ads add inventory beyond the Play zone.
 

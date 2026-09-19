@@ -268,7 +268,8 @@
   };
 
   renderContext();
-  D.init({ persona: 'vendor', seed: async (t) => { if (t.includes('feed_posts')) await EB.feed.seed(); } }).then(() => {
+  D.init({ persona: 'vendor', seed: async (t) => { if (t.includes('feed_posts')) await EB.feed.seed(); } }).then(async () => {
+    await EB.feed.seed();
     EB.bindSyncChip();
     D.on((e) => { if (e.type === 'remote' && $('.view.on') && $('.view.on').dataset.view === 'feed') feed(); });
   });

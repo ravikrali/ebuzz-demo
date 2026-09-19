@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/ebuzz.css?v=8">
+<link rel="stylesheet" href="assets/css/ebuzz.css?v=9">
 <style>
   .page-hero { padding: 44px 0 10px; }
   .page-hero h1 { font-size: clamp(34px, 4.6vw, 52px); }
@@ -146,8 +146,8 @@
 <footer class="site-foot"><div class="wrap-w"><div class="row between wrap" style="gap:10px"><span>eBuzz.ai: architecture v1.0</span><span><a href="roadmap.html">Build roadmap →</a> · <a href="docs.html?d=plan">Business plan</a> · <a href="https://github.com/ravikrali/ebuzz-demo">Source</a></span></div>
 <p style="margin:10px 0 0">Vendor names are suggestions based on public information as of September 2026. Validate pricing, contracts and certifications during procurement.</p></div></footer>
 
-<script src="assets/js/ui.js?v=8"></script>
-<script src="assets/js/arch-data.js?v=8"></script>
+<script src="assets/js/ui.js?v=9"></script>
+<script src="assets/js/arch-data.js?v=9"></script>
 <script>
 (function () {
   const { $, $$, esc } = EB, A = window.ARCH;
@@ -181,7 +181,7 @@
   row(262, 40, [['Conversation', 'Concierge sessions'], ['Catalog & Search', 'hybrid + vector'], ['Deal Room', 'offer engine']], 'a', sx0, sx1);
   row(310, 40, [['Cart · Checkout · Orders', ''], ['Wallet & Ledger', 'double-entry'], ['Games & Prize governor', 'win limits']], 'a', sx0, sx1);
   row(358, 40, [['Vendors & Contracts', 'KYB · e-sign'], ['Payouts & Finance', 'recon · tax'], ['Sync service', 'rules · change feed']], 'a', sx0, sx1);
-  row(406, 28, [['Buzz Feed & UGC', ''], ['Moderation', ''], ['Ads & Sponsored', ''], ['Notify · CMS', '']], 'b', sx0, sx1);
+  row(406, 28, [['Buzz Feed & UGC', ''], ['Moderation', ''], ['Ads & Sponsored', ''], ['Pages · Notify · CMS', '']], 'b', sx0, sx1);
   const ax = 70 + (W - 210) * 0.6 + 12, aw = (W - 210) * 0.4 - 12;
   s += `<rect x="${ax}" y="234" width="${aw}" height="208" rx="14" fill="var(--violet-soft)" stroke="var(--line)"/><text x="${ax + 14}" y="252" font-size="11" font-weight="700" letter-spacing=".08em" fill="var(--violet-ink)">AGENT PLATFORM</text>`;
   row(262, 40, [['Orchestrator', 'Temporal workflows'], ['Agent runtime', 'Claude Agent SDK']], 'b', ax + 14, ax + aw - 14);

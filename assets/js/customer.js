@@ -173,6 +173,7 @@
     if (id === 'wallet') renderWallet();
     if (id === 'orders') renderOrders();
     if (id === 'account') renderAccount();
+    if (id === 'vendor' && S.vendorName) vendorPage(S.vendorName);
   }
 
   /* ---------------- cart ---------------- */
@@ -290,7 +291,7 @@
       <div class="corner"></div>
       <div class="info">
         <div class="name">${it.name}</div>
-        <div class="vendor">${it.vendor} · <span class="stars">★</span> ${it.rating} (${it.reviews.toLocaleString()})</div>
+        <div class="vendor">${vlink(it.vendor)} · <span class="stars">★</span> ${it.rating} (${it.reviews.toLocaleString()})</div>
         <div class="price"></div>
         ${compact ? '' : `<div class="why"><b>Why:</b> ${it.why}</div>`}
         <div class="actions"><button class="btn sm primary" data-act="buy">${icon('cart')} Add</button><button class="btn sm" data-act="details">Details</button></div>
@@ -305,7 +306,76 @@
     $('.price', el).innerHTML = o ? `<b>${money(o.price, 0)}</b><s>${money(it.price, 0)}</s><span class="tag green">−${money(it.price - o.price, 0)}</span>` : `<b>${money(it.price, 0)}</b>`;
     $('.corner', el).innerHTML = o ? `<span class="tag honey">${icon('bolt')} Live offer</span>` : '';
   }
-  const repaintAll = () => { $$('.product[data-pid]').forEach((el) => { const it = find(el.dataset.pid); if (it) paintCard(el, it); }); markBest(); };
+  const repaintAll = () => { $$('.product[data-pid]').forEach((el) => { const it = find(el.dataset.pid); if (it) paintCard(el, it); }); $$('.pgrid').forEach((g) => g._layout === 'list' && g._render()); markBest(); };
+
+  /* ---------------- product results: Cards / List switch (choice remembered per browser) ---------------- */
+  const vlink = (name) => (/^eBuzz/.test(name) ? esc(name) : `<a href="#" class="vlink" data-vendor="${esc(name)}" title="Open ${esc(name)}'s store page">${esc(name)}</a>`);
+  S.layout = EB.sstore.get('eb-layout', 'cards');
+  /* Match = fit for the shopper's stated problem, answers and budget (the same factors the Concierge ranks by; ad spend is not one) */
+  function matchScore(it) {
+    const P = S.problem && PROBLEMS[S.problem];
+    let m = 70;
+    if (P) { const a = P.items.findIndex((x) => x.id === it.id), b = P.more.findIndex((x) => x.id === it.id); m = a >= 0 ? [96, 91, 88][a] || 86 : b >= 0 ? 84 - b * 3 : RISERS.some((x) => x.id === it.id) ? 82 : 66; }
+    m += Math.round((it.rating - 4.4) * 6);
+    if (S.maxPrice && eff(it) > S.maxPrice) m -= 12;
+    return Math.max(35, Math.min(99, m));
+  }
+  function productGrid(items, { compact = false, sortable = true } = {}) {
+    const g = h(`<div class="pgrid"><div class="pgrid-bar"><span class="muted" style="font-size:12.5px">${items.length} result${items.length > 1 ? 's' : ''}</span><div class="seg" role="group" aria-label="Layout"><button data-l="cards">▦ Cards</button><button data-l="list">☰ List</button></div></div><div class="pg-body"></div></div>`);
+    let sortKey = null, dir = -1;
+    g._render = () => {
+      g._layout = S.layout;
+      $$('[data-l]', g).forEach((b) => b.classList.toggle('on', b.dataset.l === S.layout));
+      const body = $('.pg-body', g); body.innerHTML = '';
+      if (S.layout === 'cards') { const grid = h('<div class="products"></div>'); items.forEach((it) => grid.append(productCard(it, { compact }))); body.append(grid); markBest(); return; }
+      const rows = items.map((it) => ({ it, price: eff(it), rating: it.rating, match: matchScore(it) }));
+      if (sortKey) rows.sort((a, b) => (a[sortKey] - b[sortKey]) * dir);
+      const best = S.problem === 'back' && Object.keys(S.offers).length ? PROBLEMS.back.items.reduce((a, b) => (eff(a) <= eff(b) ? a : b)).id : null;
+      const th = (k, l) => `<th data-sort="${k}" title="Sort by ${l.toLowerCase()}">${l}${sortKey === k ? (dir < 0 ? ' ↓' : ' ↑') : ''}</th>`;
+      const t = h(`<div class="plist-wrap"><table class="plist"><thead><tr><th class="nosort">Product</th>${th('price', 'Price')}${th('rating', 'Rating')}${th('match', 'Match')}<th class="nosort">Vendor</th><th class="nosort"></th></tr></thead><tbody>${rows.map(({ it, price, match }) => { const o = S.offers[it.id]; return `<tr data-row="${it.id}" class="${best === it.id ? 'best' : ''}">
+          <td><div class="row" style="gap:10px;align-items:flex-start"><div class="pl-em">${it.e}</div><div style="min-width:0"><b>${esc(it.name)}</b>${o ? ` <span class="tag honey">${icon('bolt')} Live offer</span>` : ''}<div class="pl-desc">${esc(it.why || '')}</div></div></div></td>
+          <td class="num"><b>${it.free ? 'Free' : money(price, 0)}</b>${o ? `<div><s class="muted">${money(it.price, 0)}</s></div>` : ''}</td>
+          <td class="num"><span class="stars">★</span> ${it.rating}<div class="muted" style="font-size:11.5px">${it.reviews.toLocaleString()}</div></td>
+          <td><span class="match" title="Fit for your problem, answers and budget">${match}<i><b style="width:${match}%"></b></i></span></td>
+          <td>${vlink(it.vendor)}</td>
+          <td style="white-space:nowrap"><button class="btn sm primary" data-add="${it.id}">${it.free ? 'Turn on' : icon('cart') + ' Add'}</button> <button class="btn sm ghost" data-det="${it.id}">Details</button></td></tr>`; }).join('')}</tbody></table></div>`);
+      $$('[data-sort]', t).forEach((x) => (x.onclick = () => { const k = x.dataset.sort; dir = sortKey === k ? -dir : k === 'price' ? 1 : -1; sortKey = k; g._render(); }));
+      $$('[data-add]', t).forEach((b) => (b.onclick = () => addToCart(find(b.dataset.add))));
+      $$('[data-det]', t).forEach((b) => (b.onclick = () => details(find(b.dataset.det))));
+      if (!sortable) $$('[data-sort]', t).forEach((x) => (x.onclick = null));
+      body.append(t);
+    };
+    $$('[data-l]', g).forEach((b) => (b.onclick = () => { S.layout = b.dataset.l; EB.sstore.set('eb-layout', S.layout); $$('.pgrid').forEach((x) => x._render()); }));
+    g._render();
+    return g;
+  }
+
+  /* ---------------- vendor storefront page (published by the supplier in the Supplier Hub) ---------------- */
+  function defaultPage(name) {
+    const prods = Object.values(CATALOG()).filter((i) => i.vendor === name && !i.free);
+    const logo = (prods[0] && prods[0].e) || '🏬';
+    return { vendor: name, logo, theme: '#6B7A99', headline: `${name} on eBuzz`, tagline: 'Auto-generated store page. This seller hasn\'t customised their page yet.', about: `${name} is a verified eBuzz seller. Products are ranked by fit for your problem, not ad spend.`, products_json: JSON.stringify(prods.map((i) => ({ id: i.id, name: i.name, e: i.e, price: i.price, blurb: i.why }))), services_json: '[]', policies_json: JSON.stringify({ shipping: 'Ships in 1–3 days', returns: '30-day returns', warranty: 'Manufacturer warranty' }), status: 'published' };
+  }
+  function vendorPage(name) {
+    S.view = 'vendor'; S.vendorName = name;
+    const pg = D.all('sup_pages').find((x) => x.vendor === name && x.status === 'published') || defaultPage(name);
+    const reviews = EB.feed ? EB.feed.list().filter((p) => p.vendor === name && p.status === 'published' && ['review', 'story', 'tip'].includes(p.kind)) : [];
+    const v = EB.view('vendor', `<div style="max-width:980px;margin:0 auto"><div class="row between wrap" style="gap:8px;margin-bottom:12px"><button class="btn sm ghost" data-back>← Back</button><div class="row" style="gap:8px"><button class="btn sm" data-share>↗ Share store</button></div></div><div data-store></div></div>`);
+    $('[data-store]', v).append(EB.storePage(pg, { reviews, onShowReviews: () => { EB.setNav('feed'); feedFilter = 'For you'; renderFeed({ vendor: name }); },
+      onAdd: (x, kind) => {
+        const it = (kind === 'product' && (CATALOG()[x.id] || find(x.id))) || { id: x.id || 'svc-' + String(x.name).toLowerCase().replace(/[^a-z0-9]+/g, '-'), name: x.name, e: x.e || (kind === 'service' ? '🛠️' : '📦'), vendor: name, price: +x.price || 0, rating: 4.6, reviews: 0, why: x.blurb || x.desc || '' };
+        if (!+it.price && kind === 'service') return EB.toast(`Request sent to ${name}. They'll reply in your eBuzz inbox (demo).`);
+        addToCart({ ...it, price: +x.price || it.price });
+      } }));
+    $('[data-back]', v).onclick = () => { const back = S.prevView && S.prevView !== 'vendor' ? S.prevView : 'chat'; EB.setNav(back); nav(back); };
+    $('[data-share]', v).onclick = async () => { const url = location.href.split('#')[0] + '#vendor=' + encodeURIComponent(name); try { await navigator.clipboard.writeText(url); EB.toast('Store link copied'); } catch { EB.toast(url); } };
+  }
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('[data-vendor]'); if (!a) return;
+    e.preventDefault(); EB.closeOverlays();
+    if (S.view !== 'vendor') S.prevView = S.view;
+    EB.setNav('none'); vendorPage(a.dataset.vendor);
+  });
   function markBest() {
     if (!S.problem) return;
     const items = PROBLEMS[S.problem].items;
@@ -322,7 +392,7 @@
         <div class="card flat"><div class="card-title" style="margin-bottom:8px">Fit for your problem</div>
           ${[['Lumbar support', 92], ['Comfort for 8+ h', 84], ['Value for money', 71]].map(([l, v]) => `<div style="margin:8px 0"><div class="row between" style="font-size:13px"><span>${l}</span><b>${v}</b></div><div class="meter g"><i style="width:${v}%"></i></div></div>`).join('')}
         </div>
-        <div class="card flat"><div class="card-title" style="margin-bottom:6px">Delivery & returns</div><div class="muted" style="font-size:14px">Ships from ${it.vendor} in 1–2 days · Free returns within 30 days · Sold by ${it.vendor}, a verified eBuzz seller</div></div>
+        <div class="card flat"><div class="card-title" style="margin-bottom:6px">Delivery & returns</div><div class="muted" style="font-size:14px">Ships from ${esc(it.vendor)} in 1–2 days · Free returns within 30 days · Sold by ${vlink(it.vendor)}, a verified eBuzz seller</div></div>
         <button class="btn primary block" id="dBuy">Add to cart · ${money(eff(it), 0)}</button>
       </div>`);
     $('#dBuy', body).onclick = () => { EB.closeOverlays(); addToCart(it); };
@@ -334,9 +404,9 @@
     const list = allItems().filter((i) => i.price <= max);
     const body = EB.drawer(`Browse: ${P.short}`, `Only items that solve <b>${P.title.toLowerCase()}</b> · ${list.length} results · up to ${money(max, 0)}`, `
       <div class="chips" style="margin-bottom:14px"><span class="tag honey">${P.short}</span>${Object.values(S.answers).map((a) => `<span class="tag">${a}</span>`).join('')}<span class="tag">≤ ${money(max, 0)}</span></div>
-      <div class="products" id="brGrid"></div>
+      <div id="brGrid"></div>
       <p class="muted" style="font-size:12.5px;margin-top:16px">eBuzz doesn't show an endless catalog. Browsing is limited to your current problem. Start a new chat to explore something else.</p>`);
-    list.forEach((it) => $('#brGrid', body).append(productCard(it, { compact: true })));
+    $('#brGrid', body).append(productGrid(list, { compact: true }));
   }
 
   /* ---------------- conversation ---------------- */
@@ -376,6 +446,9 @@
     if (/riser|monitor|screen/.test(s) && S.problem === 'back') return showRisers();
     if (/compare|difference|vs/.test(s)) return compare();
     if (/feed|post|review|story|share/.test(s)) { chat.bot('Opening the <b>Buzz Feed</b>, where you can read real reviews and share your own.'); return setTimeout(() => { EB.setNav('feed'); renderFeed(); }, 600); }
+    if (/list view|as a list|show.*list|table view/.test(s)) { S.layout = 'list'; EB.sstore.set('eb-layout', 'list'); $$('.pgrid').forEach((x) => x._render()); return chat.bot('Switched product results to <b>List view</b>: description, price, rating, Match score and a link to each vendor\'s store. Use the ▦ / ☰ switch to change it back.'); }
+    const vm = Object.values(CATALOG()).map((i) => i.vendor).find((v) => s.includes(v.toLowerCase()) && /store|shop|page|brand|seller/.test(s));
+    if (vm) { chat.bot(`Opening <b>${esc(vm)}</b>'s store page.`); S.prevView = 'chat'; return setTimeout(() => { EB.setNav('none'); vendorPage(vm); }, 500); }
     if (/game|play|win/.test(s)) return route(null, 'play');
     if (/wallet|credit|balance/.test(s)) return route(null, 'wallet');
     if (/track|order|where/.test(s)) { const o = D.all('orders', 'ORDER BY date DESC, id DESC LIMIT 1')[0]; return chat.bot(o ? `Your latest order <b>${o.id}</b> (${esc(o.item)}) is <b>${o.status}</b>. The Track Shipping agent will message you if anything changes.` : "You don't have any orders yet."); }
@@ -415,8 +488,7 @@
       <div class="card-sub" style="margin-top:12px">${P.evidence} <a href="#" class="why-link">How I ranked these</a></div></div>`);
     $('.why-link', plan).onclick = (e) => { e.preventDefault(); EB.modal(`<h3>How the Concierge ranks products</h3><ol style="padding-left:18px;line-height:1.7"><li>Fit for your stated problem & answers (45%)</li><li>Verified review sentiment for people with the same problem (25%)</li><li>Return & defect rates (15%)</li><li>Price vs. value in your budget (15%)</li></ol><p class="muted">Vendor ad spend is <b>not</b> a ranking factor. Sponsored items appear separately and are labelled "Sponsored".</p><button class="btn primary" onclick="EB.closeOverlays()">Got it</button>`); };
     await chat.bot(['Here\'s what I\'d do, in order of impact:', plan], { delay: 1100 });
-    const grid = h('<div class="products"></div>');
-    P.items.forEach((it) => grid.append(productCard(it)));
+    const grid = productGrid(P.items);
     const live = h(`<div class="row wrap" style="gap:8px"><span class="tag green"><i class="dot live"></i> Deal Room open</span><span class="muted" style="font-size:13px">These ${P.items.length} vendors can send you private offers for the next 15 minutes. You can also ask them for a better deal.</span></div>`);
     const askB = h(`<div class="row wrap"><button class="btn primary">${icon('bolt')} Ask for a better deal</button><button class="btn">${icon('search')} See more like this</button></div>`);
     askB.children[0].onclick = () => { chat.user('Can I get a better deal?'); askDeal(); };
@@ -437,15 +509,14 @@
   }
 
   async function showRisers() {
-    const grid = h('<div class="products"></div>');
-    RISERS.forEach((it) => grid.append(productCard(it)));
+    const grid = productGrid(RISERS);
     await chat.bot(['<b>Step 2: screen at eye level.</b> The top of your screen should be at or slightly below eye height:', grid]);
   }
 
   async function compare() {
     if (!S.problem) return chat.bot('Tell me the problem first and I\'ll compare the best options.');
     const items = PROBLEMS[S.problem].items;
-    const rows = items.map((i) => [`<b>${i.name}</b><div class="muted" style="font-size:12px">${i.vendor}</div>`, money(eff(i), 0) + (S.offers[i.id] ? ' <span class="tag green">offer</span>' : ''), '★ ' + i.rating, (i.tags || []).slice(0, 2).join(', '), i.why]);
+    const rows = items.map((i) => [`<b>${i.name}</b><div style="font-size:12px">${vlink(i.vendor)}</div>`, money(eff(i), 0) + (S.offers[i.id] ? ' <span class="tag green">offer</span>' : ''), '★ ' + i.rating, (i.tags || []).slice(0, 2).join(', '), i.why]);
     await chat.bot(['Side by side, with live offers included:', h(EB.table(['Product', 'Price', 'Rating', 'Key features', 'Best for'], rows, { left: true })), EB.aiNote(S.problem === 'back' ? 'If lower-back support is your top priority, <b>ErgoMax</b> is worth the extra. If you run warm or sit 8+ hours, <b>ChairCo</b>. Tightest budget: <b>Sitwell</b>.' : 'Buy them together. Each one fixes a different part of the problem.')]);
   }
 
@@ -711,7 +782,7 @@
       <div class="feed-wrap">
         <div class="row between wrap" style="gap:10px"><div><h1 style="font-size:28px">Buzz Feed</h1><div class="muted">Real reviews, stories and tips from shoppers solving the same problems. Share yours anywhere.</div></div></div>
         <div class="card composer-card">
-          <div class="row" style="gap:10px;margin-bottom:10px"><div class="post-av">${me.avatar}</div><div class="seg" data-kind>${['Review', 'Story', 'Tip', 'Question'].map((k) => `<button class="${(opt.compose || 'review') === k.toLowerCase() ? 'on' : ''}" data-k="${k.toLowerCase()}">${k}</button>`).join('')}</div></div>
+          <div class="row" style="gap:10px;margin-bottom:10px"><div class="post-av">${me.avatar}</div><div class="seg" data-kind>${['Review', 'Story', 'Tip', 'Question', 'Feedback'].map((k) => `<button class="${(opt.compose || 'review') === k.toLowerCase() ? 'on' : ''}" data-k="${k.toLowerCase()}">${k}</button>`).join('')}</div></div>
           <div data-review class="row wrap" style="gap:10px;margin-bottom:8px"><div class="star-in" data-stars>${[1, 2, 3, 4, 5].map((n) => `<button data-n="${n}" class="${n <= 5 ? 'on' : ''}" aria-label="${n} stars">★</button>`).join('')}</div>
             <select class="btn sm" data-prod aria-label="Product"><option value="">Choose a product you bought…</option>${bought.map((o) => `<option value="${esc(o.item)}" ${opt.product === o.item ? 'selected' : ''}>${esc(o.emoji || '')} ${esc(o.item)}</option>`).join('')}</select></div>
           <textarea data-text placeholder="What worked, what didn't? Your experience helps others."></textarea>
@@ -721,11 +792,12 @@
             <button class="btn primary" data-post>Post</button></div>
           <div class="muted" style="font-size:11.5px;margin-top:6px">Posts are public under your display name <b>${esc(me.name)}</b>. The AI moderator checks for spam and undisclosed incentives. <a href="#" data-guide>Community guidelines</a></div>
         </div>
-        <div class="chips" data-filters>${['For you', 'Reviews', 'Stories', 'Tips & questions', 'Deals', 'My posts'].map((f) => `<button class="chip ${f === feedFilter ? 'on' : ''}" data-f="${f}">${f}</button>`).join('')}</div>
+        <div class="chips" data-filters>${['For you', 'Reviews', 'Stories', 'Tips & questions', 'Deals', 'eBuzz updates & feedback', 'My posts'].map((f) => `<button class="chip ${f === feedFilter ? 'on' : ''}" data-f="${f}">${f}</button>`).join('')}</div>
         <div class="feed-wrap" data-list style="max-width:none"></div>
       </div>`);
     let kind = opt.compose || 'review', stars = 5, emo = '';
-    const syncKind = () => { $('[data-review]', v).style.display = kind === 'review' ? '' : 'none'; };
+    const PH = { review: 'What worked, what didn\'t? Your experience helps others.', story: 'Tell the story of how you solved it…', tip: 'Share a tip that helped you…', question: 'Ask the community…', feedback: 'Feedback for the eBuzz team: ideas, bugs, anything. The team replies publicly.' };
+    const syncKind = () => { $('[data-review]', v).style.display = kind === 'review' ? '' : 'none'; $('[data-text]', v).placeholder = PH[kind]; };
     syncKind();
     $$('[data-kind] button', v).forEach((b) => (b.onclick = () => { $$('[data-kind] button', v).forEach((x) => x.classList.remove('on')); b.classList.add('on'); kind = b.dataset.k; syncKind(); }));
     $$('[data-stars] button', v).forEach((b) => (b.onclick = () => { stars = +b.dataset.n; $$('[data-stars] button', v).forEach((x) => x.classList.toggle('on', +x.dataset.n <= stars)); }));
@@ -744,18 +816,22 @@
       await D.put('feed_posts', post);
       EB.bus.emit('feed:post', { id: post.id, status: post.status });
       if (post.status === 'flagged') EB.toast('Posted. It\'s held for a quick review because: ' + m.flags.join(', '));
+      else if (kind === 'feedback') EB.toast('Thanks! Your feedback is on the Buzz Feed. The eBuzz team replies publicly.');
       else { EB.toast('Posted to the Buzz Feed 🎉 +20 Buzz points'); EB.feed.share(post); }
       feedFilter = 'My posts'; renderFeed();
     };
     const all = EB.feed.list();
     const visible = all.filter((p) => p.status === 'published' || (p.author_id === UID && p.status !== 'removed'));
     const f = feedFilter;
-    const posts = visible.filter((p) => f === 'For you' || (f === 'Reviews' && p.kind === 'review') || (f === 'Stories' && p.kind === 'story') || (f === 'Tips & questions' && ['tip', 'question'].includes(p.kind)) || (f === 'Deals' && p.kind === 'promo') || (f === 'My posts' && p.author_id === UID));
+    const posts = visible.filter((p) => f === 'For you' || (f === 'Reviews' && p.kind === 'review') || (f === 'Stories' && p.kind === 'story') || (f === 'Tips & questions' && ['tip', 'question'].includes(p.kind)) || (f === 'Deals' && p.kind === 'promo') || (f === 'eBuzz updates & feedback' && ['update', 'feedback'].includes(p.kind)) || (f === 'My posts' && p.author_id === UID)).filter((p) => !opt.vendor || p.vendor === opt.vendor);
     const list = $('[data-list]', v);
-    EB.feed.render(list, { posts, ads: f !== 'My posts', cardOpts: { commentAs: { name: me.name }, refresh: () => renderFeed(), onShop: (p) => {
+    if (opt.vendor) list.before(h(`<div class="row between" style="font-size:13.5px"><span>Showing posts about <b>${esc(opt.vendor)}</b></span><a href="#" data-clearv>Show all</a></div>`));
+    const cv = $('[data-clearv]', v); if (cv) cv.onclick = (e) => { e.preventDefault(); renderFeed(); };
+    EB.feed.render(list, { posts, ads: f !== 'My posts', cardOpts: { commentAs: { name: me.name }, refresh: () => renderFeed(opt.vendor ? { vendor: opt.vendor } : {}), onVendor: (name) => { S.prevView = 'feed'; EB.setNav('none'); vendorPage(name); }, onShop: (p) => {
+      if (p.cta === 'Visit store') { S.prevView = 'feed'; EB.setNav('none'); return vendorPage(p.vendor); }
       const it = find(p.sku) || CATALOG()[p.sku];
       if (!it) return EB.toast('Product not available');
-      if (p.kind === 'promo') { S.offers[it.id] = { price: p.promo_price, perks: ['Feed promo'], exp: Date.now() + 15 * 60000 }; addToCart(it); EB.toast(`${it.e} Feed offer applied: ${money(p.promo_price, 0)}`); }
+      if (p.kind === 'promo' && p.promo_price) { S.offers[it.id] = { price: p.promo_price, perks: ['Feed promo'], exp: Date.now() + 15 * 60000 }; addToCart(it); EB.toast(`${it.e} Feed offer applied: ${money(p.promo_price, 0)}`); }
       else details(it);
     } } });
     if (opt.highlight) { const el = $(`[data-post="${opt.highlight}"]`, v); if (el) { el.classList.add('hl'); setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100); } }
@@ -877,7 +953,8 @@
   }
 
   /* ---------------- boot: open the local SQLite, pull from central, then start ---------------- */
-  EB.bindSyncChip && D.init({ persona: 'customer', seed }).then(() => {
+  EB.bindSyncChip && D.init({ persona: 'customer', seed }).then(async () => {
+    await EB.feed.seed();
     EB.bindSyncChip();
     renderContext();
     const hello = h(`<div class="card flat" style="background:var(--surface-2);border:0"><div class="row between wrap" style="gap:10px"><div style="font-size:14px">🍯 You have <b>${money(walletBal())}</b> in credits · <b>${playsLeft()}</b> free plays today${cartRows().length ? ` · <b>${cartRows().length}</b> item(s) in your cart` : ''}</div><button class="btn sm" onclick="document.querySelector('[data-nav=play]').click()">${icon('play')} Play & Win</button></div></div>`);
@@ -888,7 +965,9 @@
     if (location.hash === '#feed') { EB.setNav('feed'); renderFeed(); }
     const deep = location.hash.match(/^#post=([\w-]+)/);
     if (deep) { EB.setNav('feed'); renderFeed({ highlight: deep[1] }); }
+    const vd = location.hash.match(/^#vendor=(.+)$/);
+    if (vd) { EB.setNav('none'); vendorPage(decodeURIComponent(vd[1])); }
     // another device (or the Admin portal changing win limits) updated synced data
-    D.on((e) => { if (e.type !== 'remote') return; renderContext(); if (['dash', 'wallet', 'orders', 'account', 'play', 'feed'].includes(S.view)) nav(S.view); });
+    D.on((e) => { if (e.type !== 'remote') return; renderContext(); if (['dash', 'wallet', 'orders', 'account', 'play', 'feed', 'vendor'].includes(S.view) && !(S.view === 'vendor' && e.table !== 'sup_pages')) nav(S.view); });
   });
 })();

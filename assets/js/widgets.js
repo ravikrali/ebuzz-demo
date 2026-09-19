@@ -167,5 +167,30 @@
     D.on((e) => { if (e.type === 'log') return; set(true); setTimeout(() => set(false), 500); });
   };
 })();
+/* ---------- storefront landing page (Supplier builder preview + Shopper vendor page) ---------- */
+(function () {
+  const { h, $, $$, money, esc } = EB;
+  const J = (s, d) => { try { return typeof s === 'string' ? JSON.parse(s || 'null') ?? d : s ?? d; } catch { return d; } };
+  EB.storePage = (pg, { reviews = [], onAdd, onShowReviews, preview = false } = {}) => {
+    const prods = J(pg.products_json, []), svcs = J(pg.services_json, []), pol = J(pg.policies_json, {});
+    const rated = reviews.filter((r) => r.rating), avg = rated.length ? rated.reduce((a, r) => a + r.rating, 0) / rated.length : 0;
+    const el = h(`<div class="store" style="--store:${esc(pg.theme || '#2F7D5B')}">
+      <div class="store-hero"><div class="store-logo">${esc(pg.logo || '🏬')}</div>
+        <div style="flex:1;min-width:0"><div class="row wrap" style="gap:6px"><b class="store-name">${esc(pg.vendor || 'Your store')}</b><span class="tag green">✓ Verified eBuzz seller</span>${preview ? `<span class="tag ${pg.status === 'published' ? 'green' : ''}">${pg.status === 'published' ? 'Published' : 'Draft preview'}</span>` : ''}</div>
+          <h2>${esc(pg.headline || 'Headline')}</h2><p>${esc(pg.tagline || '')}</p>
+          <div class="row wrap" style="gap:14px;font-size:13px">${avg ? `<span><span class="stars">★</span> <b>${avg.toFixed(1)}</b> from ${rated.length} Buzz Feed review${rated.length > 1 ? 's' : ''}</span>` : ''}<span>🚚 ${esc(pol.shipping || 'Ships in 1–2 days')}</span><span>↩︎ ${esc(pol.returns || '30-day returns')}</span></div></div></div>
+      ${prods.length ? `<div class="store-sec"><h3>Products</h3><div class="store-grid">${prods.map((p, i) => `<div class="store-card"><div class="store-art">${esc(p.e || '📦')}</div><div class="nm">${esc(p.name)}</div><div class="muted" style="font-size:12.5px;flex:1">${esc(p.blurb || '')}</div><div class="row between" style="margin-top:6px"><b class="num">${money(+p.price || 0, 0)}</b><button class="btn sm primary" data-add="p${i}">Add</button></div></div>`).join('')}</div></div>` : ''}
+      ${svcs.length ? `<div class="store-sec"><h3>Services</h3>${svcs.map((x, i) => `<div class="store-svc"><div style="flex:1;min-width:0"><b>${esc(x.name)}</b><div class="muted" style="font-size:12.5px">${esc(x.desc || '')}</div></div><b class="num">${+x.price ? money(+x.price, 0) : 'Free'}</b><button class="btn sm" data-add="s${i}">${+x.price ? 'Book' : 'Request'}</button></div>`).join('')}</div>` : ''}
+      <div class="store-sec grid2"><div><h3>About us</h3><p style="margin:0;font-size:14px;line-height:1.55">${esc(pg.about || '')}</p></div>
+        <div><h3>Policies</h3><div class="stack" style="gap:6px;font-size:13.5px"><div>🚚 <b>Shipping:</b> ${esc(pol.shipping || '-')}</div><div>↩︎ <b>Returns:</b> ${esc(pol.returns || '-')}</div><div>🛡️ <b>Warranty:</b> ${esc(pol.warranty || '-')}</div></div></div></div>
+      <div class="store-sec" style="border-bottom:0"><div class="row between" style="margin-bottom:6px"><h3 style="margin:0">What shoppers say</h3>${onShowReviews && reviews.length ? '<a href="#" data-allrev>See all on the Buzz Feed →</a>' : ''}</div>
+        ${reviews.length ? reviews.slice(0, 3).map((r) => `<div class="store-rev"><div class="row" style="gap:8px"><b>${esc(r.author)}</b>${r.rating ? `<span class="stars">${'★'.repeat(r.rating)}</span>` : ''}${+r.verified ? '<span class="tag green">✓ Verified</span>' : ''}</div><div style="font-size:13.5px;margin-top:4px">${esc(r.text)}</div></div>`).join('') : '<p class="muted" style="font-size:13.5px;margin:0">No reviews yet.</p>'}</div>
+      <div class="muted" style="font-size:11.5px;padding:0 18px 16px">Storefront built by ${esc(pg.vendor || 'the seller')} with eBuzz Pages. Prices and claims come from the seller; eBuzz checks them against the listing before publishing.</div>
+    </div>`);
+    $$('[data-add]', el).forEach((b) => (b.onclick = () => { const k = b.dataset.add, it = k[0] === 'p' ? prods[+k.slice(1)] : svcs[+k.slice(1)]; if (onAdd) onAdd(it, k[0] === 'p' ? 'product' : 'service'); else EB.toast('Preview: shoppers can add this to their cart'); }));
+    const ar = $('[data-allrev]', el); if (ar) ar.onclick = (e) => { e.preventDefault(); onShowReviews(); };
+    return el;
+  };
+})();
 /* portals that keep no personal data still show the chip */
 setTimeout(() => { if (!EB.data || !EB.data.persona) { const l = document.getElementById('syncLbl'); if (l) l.textContent = 'No PII stored'; } }, 0);

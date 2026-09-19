@@ -31,14 +31,17 @@
     adm_roles: { cols: ['id', 'name', 'perms_json'], central: ['id', 'name', 'perms_json'], why: 'Permissions are enforced server-side.' },
     config: { cols: ['id', 'json', 'updated_at'], central: ['id', 'json', 'updated_at'], why: 'Platform settings, e.g. win limits.' },
     // Buzz Feed (public by design: shown under a display name, never contact details)
-    feed_posts: { cols: ['id', 'author_id', 'author', 'avatar', 'kind', 'text', 'rating', 'product', 'sku', 'vendor', 'emoji', 'promo_price', 'list_price', 'cta', 'sponsored', 'status', 'likes', 'shares', 'comments_json', 'mod_score', 'mod_flags', 'impressions', 'clicks', 'targets', 'incentivized', 'verified', 'created_at'], central: ['id', 'author_id', 'author', 'avatar', 'kind', 'text', 'rating', 'product', 'sku', 'vendor', 'emoji', 'promo_price', 'list_price', 'cta', 'sponsored', 'status', 'likes', 'shares', 'comments_json', 'mod_score', 'mod_flags', 'impressions', 'clicks', 'targets', 'incentivized', 'verified', 'created_at'], why: 'Public posts, shown under the display name the author chooses. No email, address or order details are included; "verified purchase" is a yes/no flag.' },
+    feed_posts: { cols: ['id', 'author_id', 'author', 'avatar', 'kind', 'text', 'rating', 'product', 'sku', 'vendor', 'emoji', 'promo_price', 'list_price', 'cta', 'sponsored', 'status', 'likes', 'shares', 'comments_json', 'mod_score', 'mod_flags', 'impressions', 'clicks', 'targets', 'incentivized', 'verified', 'resolution', 'created_at'], central: ['id', 'author_id', 'author', 'avatar', 'kind', 'text', 'rating', 'product', 'sku', 'vendor', 'emoji', 'promo_price', 'list_price', 'cta', 'sponsored', 'status', 'likes', 'shares', 'comments_json', 'mod_score', 'mod_flags', 'impressions', 'clicks', 'targets', 'incentivized', 'verified', 'resolution', 'created_at'], why: 'Public posts, shown under the display name the author chooses. No email, address or order details are included; "verified purchase" is a yes/no flag.' },
+    // supplier growth tools (business data, no consumer PII)
+    sup_ads: { cols: ['id', 'org', 'type', 'name', 'product', 'targets', 'budget', 'bid', 'spend', 'impressions', 'clicks', 'start', 'end', 'status', 'post_id', 'note', 'created_at'], central: ['id', 'org', 'type', 'name', 'product', 'targets', 'budget', 'bid', 'spend', 'impressions', 'clicks', 'start', 'end', 'status', 'post_id', 'note', 'created_at'], why: 'Ad campaigns are billed and ad-reviewed centrally. Targeting is contextual (problem clusters), never personal data.' },
+    sup_pages: { cols: ['id', 'org', 'vendor', 'slug', 'logo', 'theme', 'headline', 'tagline', 'about', 'products_json', 'services_json', 'policies_json', 'status', 'views', 'updated_at'], central: ['id', 'org', 'vendor', 'slug', 'logo', 'theme', 'headline', 'tagline', 'about', 'products_json', 'services_json', 'policies_json', 'status', 'views', 'updated_at'], why: 'Public storefront page, shown to shoppers once published.' },
     plat_tx: { cols: ['id', 'date', 'type', 'party', 'ref', 'amount', 'fee', 'status', 'region'], central: ['id', 'date', 'type', 'party', 'ref', 'amount', 'fee', 'status', 'region'], why: 'Platform ledger. Parties are pseudonymous IDs.' },
   };
   // which tables each portal keeps on-device, and which central records it may read
   const SCOPES = {
-    customer: { key: 'acct:maya', tables: ['profile', 'prefs', 'orders', 'wallet_tx', 'cart', 'memory', 'config', 'feed_posts'], readOnly: ['config'], filter: (r) => r.table === 'config' || r.table === 'feed_posts' || r.owner === 'acct:maya' },
-    supplier: { key: 'org:sitwell', tables: ['sup_staff', 'sup_roles', 'sup_tx', 'orders'], readOnly: ['orders'], filter: (r) => (r.table === 'orders' ? r.data.vendor === 'Sitwell Home' : r.owner === 'org:sitwell') },
-    admin: { key: 'org:ebuzz', tables: ['adm_staff', 'adm_roles', 'config', 'plat_tx', 'orders', 'wallet_tx', 'feed_posts'], readOnly: ['orders', 'wallet_tx'], filter: (r) => ['orders', 'wallet_tx', 'feed_posts'].includes(r.table) || r.owner === 'org:ebuzz' },
+    customer: { key: 'acct:maya', tables: ['profile', 'prefs', 'orders', 'wallet_tx', 'cart', 'memory', 'config', 'feed_posts', 'sup_pages'], readOnly: ['config', 'sup_pages'], filter: (r) => r.table === 'config' || r.table === 'feed_posts' || (r.table === 'sup_pages' && r.data.status === 'published') || r.owner === 'acct:maya' },
+    supplier: { key: 'org:sitwell', tables: ['sup_staff', 'sup_roles', 'sup_tx', 'orders', 'feed_posts', 'config', 'sup_ads', 'sup_pages'], readOnly: ['orders', 'config'], filter: (r) => (r.table === 'orders' ? r.data.vendor === 'Sitwell Home' : ['feed_posts', 'config'].includes(r.table) ? true : ['sup_ads', 'sup_pages'].includes(r.table) ? r.data.org === 'sitwell' : r.owner === 'org:sitwell') },
+    admin: { key: 'org:ebuzz', tables: ['adm_staff', 'adm_roles', 'config', 'plat_tx', 'orders', 'wallet_tx', 'feed_posts', 'sup_ads', 'sup_pages'], readOnly: ['orders', 'wallet_tx', 'sup_ads', 'sup_pages'], filter: (r) => ['orders', 'wallet_tx', 'feed_posts', 'sup_ads', 'sup_pages'].includes(r.table) || r.owner === 'org:ebuzz' },
     vendor: { key: 'org:ergomax', tables: ['feed_posts', 'config'], readOnly: ['config'], filter: (r) => r.table === 'feed_posts' || r.table === 'config' },
     agents: { key: 'org:ebuzz', tables: ['config'], readOnly: ['config'], filter: (r) => r.table === 'config' },
   };
@@ -92,7 +95,12 @@
         log('info', file && file.length ? `Opened local SQLite (${(file.length / 1024).toFixed(0)} KB) on ${D.deviceLabel(D.device)}` : `Created local SQLite on ${D.deviceLabel(D.device)}`);
       } catch (e) { log('warn', 'SQLite (WASM) could not load; using in-memory fallback'); }
       scope.tables.forEach((t) => {
-        if (SQLdb) SQLdb.run(`CREATE TABLE IF NOT EXISTS ${t} (${SCHEMA[t].cols.map((c) => `"${c}" TEXT`).join(', ')}, _updated INTEGER, _origin TEXT, PRIMARY KEY(id))`);
+        if (SQLdb) {
+          SQLdb.run(`CREATE TABLE IF NOT EXISTS ${t} (${SCHEMA[t].cols.map((c) => `"${c}" TEXT`).join(', ')}, _updated INTEGER, _origin TEXT, PRIMARY KEY(id))`);
+          // lightweight migration: add columns introduced after this device's database was created
+          const have = new Set((SQLdb.exec(`PRAGMA table_info(${t})`)[0] || { values: [] }).values.map((v) => v[1]));
+          SCHEMA[t].cols.filter((c) => !have.has(c)).forEach((c) => { SQLdb.run(`ALTER TABLE ${t} ADD COLUMN "${c}" TEXT`); log('info', `Migrated ${t}: added column ${c}`); });
+        }
         else fallback[t] = fallback[t] || new Map();
       });
       await D.pull();
@@ -110,7 +118,7 @@
 
   function persist() { if (!SQLdb || !localIdb) return; clearTimeout(saveT); saveT = setTimeout(() => tx(localIdb, 'files', 'readwrite', (s) => s.put(SQLdb.export(), keyName)), 250); }
   const rowObj = (cols, vals) => Object.fromEntries(cols.map((c, i) => [c, vals[i]]));
-  const NUMERIC = new Set(['price', 'list_price', 'promo_price', 'total', 'tax', 'credit', 'amount', 'gross', 'fees', 'net', 'fee', 'qty', 'offer', 'rating', 'likes', 'shares', 'mod_score', 'impressions', 'clicks', 'sponsored', 'incentivized', 'verified', '_updated']);
+  const NUMERIC = new Set(['price', 'list_price', 'promo_price', 'total', 'tax', 'credit', 'amount', 'gross', 'fees', 'net', 'fee', 'qty', 'offer', 'rating', 'likes', 'shares', 'mod_score', 'impressions', 'clicks', 'sponsored', 'incentivized', 'verified', 'budget', 'bid', 'spend', 'views', '_updated']);
   const cast = (t, r) => { const o = {}; SCHEMA[t].cols.forEach((c) => { const v = r[c]; o[c] = v !== null && v !== undefined && v !== '' && !isNaN(v) && NUMERIC.has(c) ? +v : v ?? null; }); return o; };
 
   function upsertLocal(t, row, updated, origin) {

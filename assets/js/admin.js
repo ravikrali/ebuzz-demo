@@ -11,7 +11,7 @@
       { id: 'overview', label: 'Copilot', icon: 'chat' },
       { id: 'payouts', label: 'Payouts', icon: 'send', badge: 1 },
       { id: 'limits', label: 'Win limits', icon: 'trophy' },
-      { id: 'feed', label: 'Feed & Ads', icon: 'feed', badge: 3 },
+      { id: 'feed', label: 'Buzz Feed', icon: 'feed', badge: 3 },
       { id: 'recon', label: 'Reconcile', icon: 'check', badge: 3 },
       { id: 'staff', label: 'Staff & access', icon: 'users' },
       { id: 'forecast', label: 'Forecast', icon: 'target' },
@@ -210,22 +210,74 @@
   }
 
   /* ---------------- Feed & Ads: moderation, promotion review, ad networks ---------------- */
-  let ft = 'Queue';
+  let ft = 'Feed';
+  const TEAM = { name: 'eBuzz Team', brand: true, team: true };
+  const RESOLUTIONS = ['Acknowledged', 'Planned', 'In progress', 'Shipped', "Won't do"];
+  const feedCounts = () => {
+    const all = EB.feed.list(), camps = D.all('sup_ads');
+    const c = { queue: all.filter((p) => p.status === 'flagged').length, pending: all.filter((p) => p.status === 'pending').length, feedback: all.filter((p) => p.kind === 'feedback' && p.status === 'published' && !p.resolution).length, camps: camps.filter((a) => a.status === 'pending review' && !a.post_id).length };
+    c.total = c.queue + c.pending + c.feedback + c.camps; return c;
+  };
+  const setFeedBadge = () => { const b = $('[data-nav=feed] .badge'); if (!b) return; const n = feedCounts().total; b.textContent = n; b.style.display = n ? '' : 'none'; };
   function feedAdmin() {
     const all = EB.feed.list(), cfg = EB.feed.adConfig();
     const queue = all.filter((p) => p.status === 'flagged'), pending = all.filter((p) => p.status === 'pending');
     const wk = all.filter((p) => p.created_at >= new Date(Date.now() - 7 * 864e5).toISOString());
     const adRev = D.all('plat_tx').filter((x) => x.type === 'Feed ads' && x.date >= D.daysAgo(30)).reduce((a, x) => a + x.fee, 0);
     const spRev = D.all('plat_tx').filter((x) => x.type === 'Sponsored posts' && x.date >= D.daysAgo(30)).reduce((a, x) => a + x.fee, 0);
-    const badge = $('[data-nav=feed] .badge'); if (badge) { badge.textContent = queue.length + pending.length; badge.style.display = queue.length + pending.length ? '' : 'none'; }
+    const C = feedCounts(), feedback = all.filter((p) => p.kind === 'feedback' && p.status !== 'removed'), camps = D.all('sup_ads').sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+    setFeedBadge();
     const v = EB.view('feed', `
-      <div class="row between wrap" style="gap:10px;margin-bottom:14px"><div><h1 style="font-size:28px">Buzz Feed · Trust & Ads</h1><div class="muted">Moderate shopper posts, review vendor promotions before they go live, and control banner ad networks. The same feed appears in the Shopper and Vendor portals.</div></div></div>
-      ${EB.kpis([['Posts (7d)', wk.length], ['Held for review', queue.length, 'AI-flagged or reported', queue.length ? 'down' : ''], ['Promotions pending', pending.length], ['Shares (all)', all.reduce((a, p) => a + (+p.shares || 0), 0).toLocaleString()], ['Banner ad revenue (30d)', money(adRev, 0)], ['Sponsored posts (30d)', money(spRev, 0)]])}
-      <div class="chips" style="margin:14px 0" data-tabs>${[['Queue', queue.length], ['Promotion review', pending.length], ['All posts', all.length], ['Ad settings', '']].map(([t, n]) => `<button class="chip ${t === ft ? 'on' : ''}" data-t="${t}">${t} ${n !== '' ? `<span class="muted">${n}</span>` : ''}</button>`).join('')}</div>
+      <div class="row between wrap" style="gap:10px;margin-bottom:14px"><div><h1 style="font-size:28px">Buzz Feed</h1><div class="muted">Post platform updates, answer shopper feedback as the eBuzz Team, moderate posts, review paid promotions and control banner ads. The same feed appears in the Shopper, Vendor and Supplier portals.</div></div></div>
+      ${EB.kpis([['Posts (7d)', wk.length], ['Open feedback', C.feedback, 'needs a team reply', C.feedback ? 'down' : ''], ['Held for review', queue.length, 'AI-flagged or reported', queue.length ? 'down' : ''], ['Promotions pending', pending.length + C.camps], ['Shares (all)', all.reduce((a, p) => a + (+p.shares || 0), 0).toLocaleString()], ['Banner ad revenue (30d)', money(adRev, 0)], ['Sponsored posts (30d)', money(spRev, 0)]])}
+      <div class="chips" style="margin:14px 0" data-tabs>${[['Feed', ''], ['Feedback', C.feedback], ['Queue', queue.length], ['Promotion review', pending.length], ['Campaigns', C.camps], ['All posts', all.length], ['Ad settings', '']].map(([t, n]) => `<button class="chip ${t === ft ? 'on' : ''}" data-t="${t}">${t} ${n !== '' ? `<span class="muted">${n}</span>` : ''}</button>`).join('')}</div>
       <div data-body></div>`);
     $$('[data-t]', v).forEach((b) => (b.onclick = () => { ft = b.dataset.t; feedAdmin(); }));
     const body = $('[data-body]', v);
-    const act = async (p, patch, msg) => { await D.put('feed_posts', { ...p, ...patch }); EB.toast(msg); feedAdmin(); };
+    const act = async (p, patch, msg) => {
+      await D.put('feed_posts', { ...p, ...patch });
+      if (p.kind === 'promo' && patch.status) { const c = D.all('sup_ads').find((a) => a.post_id === p.id); if (c && c.status === 'pending review') await D.put('sup_ads', { ...c, status: patch.status === 'published' ? 'active' : 'rejected', note: patch.status === 'published' ? '' : 'Rejected in ad review' }); }
+      EB.toast(msg); feedAdmin();
+    };
+    if (ft === 'Feed') {
+      body.innerHTML = `<div class="feed-wrap" style="max-width:760px;margin:0">
+        <div class="card composer-card"><div class="row" style="gap:10px;margin-bottom:10px"><div class="post-av">🍯</div><div><b>Post a platform update</b><div class="muted" style="font-size:12.5px">Published as <b>eBuzz Team</b> to every portal's Buzz Feed</div></div></div>
+          <div class="chips" data-tpl style="margin-bottom:8px">${[['✨ New feature', 'New: '], ['🛠️ Fix', 'Fixed: '], ['📜 Policy', 'Policy update: '], ['🎉 Event', 'This weekend: ']].map(([l, t]) => `<button class="chip" data-t2="${t}">${l}</button>`).join('')}</div>
+          <textarea data-up placeholder="What's new on eBuzz? Keep it short and useful."></textarea>
+          <div class="row between wrap" style="margin-top:8px;gap:8px"><label class="row" style="gap:6px;font-size:13px"><input type="checkbox" data-notify checked> Also send as an in-app notification</label><button class="btn primary" data-pub>Publish update</button></div></div>
+        <div data-list></div></div>`;
+      $$('[data-t2]', body).forEach((b) => (b.onclick = () => { const ta = $('[data-up]', body); ta.value = b.dataset.t2 + ta.value.replace(/^(New|Fixed|Policy update|This weekend): /, ''); ta.focus(); }));
+      $('[data-pub]', body).onclick = async () => {
+        const text = $('[data-up]', body).value.trim(); if (text.length < 10) return EB.toast('Write at least a sentence');
+        const post = { id: D.id('fp'), author_id: 'brand_ebuzz', author: 'eBuzz Team', avatar: '🍯', kind: 'update', text, rating: null, product: '', sku: '', vendor: '', emoji: '', promo_price: null, list_price: null, cta: '', sponsored: 0, status: 'published', likes: 0, shares: 0, comments_json: '[]', mod_score: 0, mod_flags: '', impressions: 0, clicks: 0, targets: '', incentivized: 0, verified: 0, resolution: '', created_at: new Date().toISOString() };
+        await D.put('feed_posts', post); EB.bus.emit('feed:post', { id: post.id, status: 'published', kind: 'update' });
+        EB.toast($('[data-notify]', body).checked ? 'Update published and notification queued' : 'Update published to the Buzz Feed'); feedAdmin();
+      };
+      EB.feed.render($('[data-list]', body), { posts: all.filter((p) => p.status === 'published'), cardOpts: { commentAs: TEAM, noReport: true, refresh: () => feedAdmin(), extra: (p) => (p.author_id === 'brand_ebuzz' ? '' : '<button data-rm style="color:var(--red)">✕ Remove</button>'),
+        bind: (el, p) => { const rm = $('[data-rm]', el); if (rm) rm.onclick = () => act(p, { status: 'removed' }, 'Post removed; author notified with the policy reason'); } } });
+      return;
+    }
+    if (ft === 'Feedback') {
+      const byRes = RESOLUTIONS.map((r) => [r, feedback.filter((p) => p.resolution === r).length]);
+      body.innerHTML = `<div class="feed-wrap" style="max-width:760px;margin:0">${EB.aiNote(`<b>Feedback themes this week (AI):</b> Deal Room notifications on mobile (${feedback.filter((p) => /phone|notif|lock screen|timer/i.test(p.text)).length}), browsing & comparison (${feedback.filter((p) => /list|compare|filter/i.test(p.text)).length}). Reply publicly as the eBuzz Team and set a status so shoppers can see what happened.`)}
+        <div class="chips">${[['Open', feedback.filter((p) => !p.resolution).length], ...byRes].map(([r, n]) => `<span class="tag">${r}: ${n}</span>`).join('')}</div><div data-list></div></div>`;
+      EB.feed.render($('[data-list]', body), { posts: feedback.sort((a, b) => (a.resolution ? 1 : 0) - (b.resolution ? 1 : 0)), ads: false, cardOpts: { commentAs: TEAM, noReport: true, refresh: () => feedAdmin(),
+        extra: (p) => `<select class="btn sm" data-res aria-label="Status"><option value="">Set status…</option>${RESOLUTIONS.map((r) => `<option ${p.resolution === r ? 'selected' : ''}>${r}</option>`).join('')}</select>`,
+        bind: (el, p) => { $('[data-res]', el).onchange = (e) => act(p, { resolution: e.target.value }, e.target.value ? `Marked "${e.target.value}". The author sees it on their post.` : 'Status cleared'); if (!EB.feed.brandReplied(p, 'eBuzz Team')) $('.post-comments', el).hidden = false; } } });
+      return;
+    }
+    if (ft === 'Campaigns') {
+      body.innerHTML = `<div>${EB.aiNote('Self-serve campaigns bought by suppliers and vendors. Sponsored posts are approved from <b>Promotion review</b>; banners, Top10 slots, game levels and spotlights are approved here. Checks: truthful pricing, labels, blocked categories, contextual targeting only.')}</div><div class="card" style="margin-top:12px" data-t></div>`;
+      const t = EB.dataTable({ rows: camps, filterKey: 'status', csv: 'ad-campaigns.csv', sumKey: 'spend', sumLabel: 'Spend', columns: [
+        { key: 'id', label: 'ID', fmt: (x) => `<span class="mono" style="font-size:12px">${esc(x)}</span>` }, { key: 'org', label: 'Advertiser', fmt: (x) => (x === 'sitwell' ? 'Sitwell Home Co.' : esc(x)) }, { key: 'type', label: 'Type' },
+        { key: 'name', label: 'Campaign', fmt: (x, r) => `<b>${esc(x)}</b><div class="muted" style="font-size:12px">${esc(r.product)} · ${esc(r.targets)}</div>` }, { key: 'budget', label: 'Budget', right: true, fmt: (x) => money(x, 0) }, { key: 'spend', label: 'Spent', right: true, fmt: (x) => money(x, 0) },
+        { key: 'status', label: 'Status', fmt: (x, r) => `<span class="tag ${x === 'active' ? 'green' : x === 'pending review' ? 'honey' : x === 'rejected' ? 'red' : ''}">${x}</span>${x === 'pending review' && !r.post_id ? ` <button class="btn sm primary" data-cok="${r.id}">Approve</button> <button class="btn sm ghost" data-crj="${r.id}">Reject</button>` : x === 'pending review' ? ' <span class="muted" style="font-size:11.5px">via Promotion review</span>' : ''}` },
+      ] });
+      $('[data-t]', body).append(t);
+      body.onclick = async (e) => { const ok = e.target.closest('[data-cok]'), rj = e.target.closest('[data-crj]'); if (!ok && !rj) return; const a = D.get('sup_ads', (ok || rj).dataset.cok || (ok || rj).dataset.crj); await D.put('sup_ads', { ...a, status: ok ? 'active' : 'rejected', note: ok ? '' : 'Rejected: creative needs a clear "Sponsored" label' }); EB.toast(ok ? `${a.id} approved: live now` : `${a.id} rejected; advertiser notified`); feedAdmin(); };
+      return;
+    }
+    body.onclick = null;
     if (ft === 'Ad settings') {
       body.innerHTML = `<div class="grid2">
         <div class="card"><div class="card-title" style="margin-bottom:10px">Banner ad networks</div>
@@ -302,6 +354,9 @@
 
   chat.onText = (t) => {
     const s = t.toLowerCase();
+    if (/feedback/.test(s)) { ft = 'Feedback'; EB.setNav('feed'); return feedAdmin(); }
+    if (/platform update|announce|post an update/.test(s)) { ft = 'Feed'; EB.setNav('feed'); return feedAdmin(); }
+    if (/campaign|advertis/.test(s)) { ft = 'Campaigns'; EB.setNav('feed'); return feedAdmin(); }
     if (/feed|moderat|post|review queue|banner|ads? network|promotion/.test(s)) { EB.setNav('feed'); return feedAdmin(); }
     if (/limit|cap/.test(s)) { EB.setNav('limits'); return winLimits(); }
     if (/staff|territory|associate|role|access|rbac|permission/.test(s)) { EB.setNav('staff'); return staffView(); }
@@ -314,13 +369,13 @@
   };
 
   ctx();
-  D.init({ persona: 'admin', seed }).then(() => {
-    EB.bindSyncChip();
-    const b = $('[data-nav=feed] .badge'); if (b) { const n = EB.feed.list().filter((p) => ['flagged', 'pending'].includes(p.status)).length; b.textContent = n; b.style.display = n ? '' : 'none'; }
-    D.on((e) => { if (e.type !== 'remote') return; const cur = $('.view.on'); if (cur && cur.dataset.view === 'board') board(); if (cur && cur.dataset.view === 'feed') feedAdmin(); });
+  D.init({ persona: 'admin', seed }).then(async () => {
+    await EB.feed.seed();
+    EB.bindSyncChip(); setFeedBadge();
+    D.on((e) => { if (e.type !== 'remote') return; setFeedBadge(); const cur = $('.view.on'); if (cur && cur.dataset.view === 'board') board(); if (cur && cur.dataset.view === 'feed' && !(ft === 'Feed' && $('[data-up]') && $('[data-up]').value)) feedAdmin(); });
   });
   chat.bot(['<h2 style="font-size:24px;margin-bottom:6px">Admin Console</h2><p>Morning, Alex. The books are reconciled up to 6:00am. <b>One approval</b> is blocking vendor payouts. Full lists are in the <a href="#" onclick="document.querySelector(\'[data-nav=board]\').click();return false">Dashboard</a>.</p>'], { delay: 300 });
   W.overview();
-  if (location.hash === '#feed') setTimeout(() => { EB.setNav('feed'); feedAdmin(); }, 600);
-  EB.setSuggest([...Object.entries(LABELS).map(([id, label]) => ({ label, id })), { label: 'Change win limits', id: 'limits' }, { label: 'Review flagged posts & promotions', id: 'feed' }, { label: 'Add a Territory Manager', id: 'staff' }], (c) => { if (c.id === 'limits') { EB.setNav('limits'); return winLimits(); } if (c.id === 'feed') { EB.setNav('feed'); return feedAdmin(); } if (c.id === 'staff') { EB.setNav('staff'); return staffView(); } EB.setNav(c.id); chat.user(c.label); W[c.id](); });
+  if (location.hash === '#feed') D.ready.then(() => setTimeout(() => { EB.setNav('feed'); feedAdmin(); }, 300));
+  EB.setSuggest([...Object.entries(LABELS).map(([id, label]) => ({ label, id })), { label: 'Change win limits', id: 'limits' }, { label: 'Review flagged posts & promotions', id: 'feed' }, { label: 'Answer platform feedback', id: 'feedback' }, { label: 'Post a platform update', id: 'update' }, { label: 'Add a Territory Manager', id: 'staff' }], (c) => { if (c.id === 'limits') { EB.setNav('limits'); return winLimits(); } if (c.id === 'feed') { ft = 'Queue'; EB.setNav('feed'); return feedAdmin(); } if (c.id === 'feedback' || c.id === 'update') { ft = c.id === 'feedback' ? 'Feedback' : 'Feed'; EB.setNav('feed'); return feedAdmin(); } if (c.id === 'staff') { EB.setNav('staff'); return staffView(); } EB.setNav(c.id); chat.user(c.label); W[c.id](); });
 })();
