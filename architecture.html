@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>eBuzz Architecture</title>
+<meta name="description" content="eBuzz.ai system architecture: logical architecture, tool stack with alternatives and trade-offs, and the security & compliance program.">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/ebuzz.css">
+<style>
+  .page-hero { padding: 44px 0 10px; }
+  .page-hero h1 { font-size: clamp(34px, 4.6vw, 52px); }
+  .page-hero p { color: var(--ink-2); font-size: 17.5px; max-width: 760px; }
+  .subnav { position: sticky; top: 62px; z-index: 15; background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(8px); padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .subnav .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .subnav a.chip { text-decoration: none; flex: none; }
+  .diagram { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 14px; overflow-x: auto; }
+  .diagram svg { display: block; min-width: 980px; width: 100%; height: auto; }
+  .diagram text { font-family: var(--font); }
+  .tool { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+  .tool + .tool { margin-top: 10px; }
+  .tool summary { list-style: none; cursor: pointer; padding: 14px 16px; display: grid; grid-template-columns: 200px 1fr auto; gap: 14px; align-items: center; }
+  .tool summary::-webkit-details-marker { display: none; }
+  .tool summary .cat { font-weight: 700; font-size: 13.5px; color: var(--muted); }
+  .tool summary .pick { font-weight: 700; }
+  .tool summary .more { font-size: 12.5px; color: var(--accent-ink); font-weight: 600; white-space: nowrap; }
+  .tool[open] summary .more::after { content: ' ▲'; } .tool:not([open]) summary .more::after { content: ' ▼'; }
+  .tool .body { padding: 0 16px 16px; }
+  .pc { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px; }
+  .pc ul { margin: 4px 0 0; padding-left: 18px; }
+  .pro { color: var(--green); } .con { color: var(--red); }
+  .sec-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .layer-tag { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+  @media (max-width: 900px) { .tool summary { grid-template-columns: 1fr; gap: 4px; } .pc { grid-template-columns: 1fr; } .sec-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header class="site-nav"><div class="in">
+  <a class="brand" href="index.html" id="brand"><span>eBuzz<b>.ai</b></span></a>
+  <nav class="links">
+    <a href="index.html#portals" class="hide-m">Prototype</a>
+    <a href="architecture.html" style="color:var(--ink)">Architecture</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="docs.html?d=plan" class="hide-m">Business plan</a>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode"></button>
+  </nav>
+</div></header>
+
+<main class="wrap-w">
+  <section class="page-hero">
+    <div class="eyebrow">System architecture · v1.0 · September 2026</div>
+    <h1>How eBuzz.ai is built</h1>
+    <p>A local-first, agent-native marketplace on AWS. It has chat-first clients, a real-time Deal Room, an event-driven core, and a governed AI agent platform. Security and compliance are designed in from the start: personal data stays encrypted on users' devices, and people approve anything that moves money, publishes content or signs contracts.</p>
+    <div class="kpis" style="margin-top:18px">
+      <div class="kpi"><div class="l">Client portals</div><div class="v">5 + mobile</div></div>
+      <div class="kpi"><div class="l">Domain services</div><div class="v">12</div></div>
+      <div class="kpi"><div class="l">Operational AI agents</div><div class="v">24</div></div>
+      <div class="kpi"><div class="l">Tool categories compared</div><div class="v" id="nTools">-</div></div>
+      <div class="kpi"><div class="l">PCI scope</div><div class="v">SAQ-A</div></div>
+    </div>
+  </section>
+
+  <nav class="subnav" aria-label="Sections"><div class="chips">
+    <a class="chip" href="#principles">Principles</a><a class="chip" href="#logical">Logical architecture</a><a class="chip" href="#flow">Deal Room flow</a><a class="chip" href="#deploy">Deployment</a><a class="chip" href="#tools">Tools & alternatives</a><a class="chip" href="#security">Security</a><a class="chip" href="#ai-security">AI security</a><a class="chip" href="#threats">Threat model</a><a class="chip" href="#compliance">Compliance</a>
+  </div></nav>
+
+  <section class="section" id="principles" style="border-top:0">
+    <h2>Architecture principles</h2>
+    <p class="sub">Six decisions shape everything else.</p>
+    <div class="sec-grid">
+      <div class="card"><span class="tag honey">1</span><h3 style="margin:10px 0 6px">Chat-first, component-rich</h3><p class="muted" style="margin:0">The chat stream carries typed UI components (cards, tables, forms). Dashboards hold the full lists.</p></div>
+      <div class="card"><span class="tag honey">2</span><h3 style="margin:10px 0 6px">Local-first data</h3><p class="muted" style="margin:0">SQLite on every device syncs with Postgres. PII lives in an end-to-end encrypted vault.</p></div>
+      <div class="card"><span class="tag honey">3</span><h3 style="margin:10px 0 6px">Event-driven core</h3><p class="muted" style="margin:0">Orders, offers, games and agents publish events. Durable workflows handle money.</p></div>
+      <div class="card"><span class="tag honey">4</span><h3 style="margin:10px 0 6px">Governed agents</h3><p class="muted" style="margin:0">Agents reach services only through MCP tools with least privilege, budgets, evals and human gates.</p></div>
+      <div class="card"><span class="tag honey">5</span><h3 style="margin:10px 0 6px">Protocol-ready</h3><p class="muted" style="margin:0">UCP/ACP endpoints let external AI agents shop eBuzz live offers.</p></div>
+      <div class="card"><span class="tag honey">6</span><h3 style="margin:10px 0 6px">Buy, don't build (non-core)</h3><p class="muted" style="margin:0">We build Deal Room, Concierge, games and the ledger. Payments, tax, shipping and identity are bought.</p></div>
+    </div>
+  </section>
+
+  <section class="section" id="logical">
+    <h2>Logical architecture</h2>
+    <p class="sub">Layers from the device to external services. Security & compliance and observability run through every layer.</p>
+    <div class="diagram" id="logicalDiagram" role="img" aria-label="Logical architecture diagram"></div>
+    <div class="grid3" style="margin-top:16px">
+      <div class="card flat"><b>Domain services</b><p class="muted" style="margin:6px 0 0;font-size:14px">Each service owns its Postgres schema and publishes events. There is no cross-service database access. The <b>Ledger</b> (wallet credits, commissions, payouts) is append-only, with double-entry bookkeeping.</p></div>
+      <div class="card flat"><b>Agent platform</b><p class="muted" style="margin:6px 0 0;font-size:14px">The orchestrator (Temporal) runs agent workflows. The runtime calls Claude through the model gateway. Tools are MCP servers backed by domain APIs. Side effects above set limits go to the approval queue.</p></div>
+      <div class="card flat"><b>Sync & privacy</b><p class="muted" style="margin:6px 0 0;font-size:14px">The sync service replicates allowed rows to each device. Vault columns hold only ciphertext. Fulfilment tokens release a shipping address to one vendor for one order.</p></div>
+    </div>
+  </section>
+
+  <section class="section" id="flow">
+    <h2>Key flow: "Ask for a better deal"</h2>
+    <p class="sub">The shopper keeps chatting while vendors respond over several minutes.</p>
+    <div class="diagram" id="flowDiagram" role="img" aria-label="Sequence diagram of a deal request"></div>
+  </section>
+
+  <section class="section" id="deploy">
+    <h2>Deployment & environments</h2>
+    <p class="sub">Everything is deployed through GitOps. Every environment is created from the same Terraform modules.</p>
+    <div id="deployTable"></div>
+  </section>
+
+  <section class="section" id="tools">
+    <h2>Tools needed & alternatives</h2>
+    <p class="sub">Each category shows the recommended tool, why we chose it, and the alternatives with their pros and cons. Click a row to expand it.</p>
+    <div class="chips" id="layerFilter" style="margin-bottom:14px"></div>
+    <div id="toolList"></div>
+  </section>
+
+  <section class="section" id="security">
+    <h2>Security architecture</h2>
+    <p class="sub">Security is a product feature for eBuzz. Shoppers trust us with purchases, vendors trust us with pricing, and regulators watch AI and gamification closely.</p>
+    <div class="sec-grid" id="principlesGrid"></div>
+    <h3 style="margin:28px 0 12px">Controls by domain</h3>
+    <div id="controlsTable"></div>
+    <h3 style="margin:28px 0 12px">Secure delivery pipeline</h3>
+    <div class="diagram" id="sdlcDiagram" role="img" aria-label="Secure software delivery pipeline"></div>
+  </section>
+
+  <section class="section" id="ai-security">
+    <h2>AI & agent security (OWASP Top 10 for LLM Applications)</h2>
+    <p class="sub">How each risk is handled for both the operational agents and the build agents.</p>
+    <div id="llmTable"></div>
+  </section>
+
+  <section class="section" id="threats">
+    <h2>Threat model (STRIDE, top risks)</h2>
+    <div id="threatTable"></div>
+  </section>
+
+  <section class="section" id="compliance">
+    <h2>Compliance program</h2>
+    <p class="sub">What applies to us, why, and when we'll be ready. Counsel should review this before launch.</p>
+    <div id="complianceTable"></div>
+    <div class="grid3" style="margin-top:16px">
+      <div class="card"><b>Governance</b><p class="muted" style="margin:6px 0 0;font-size:14px">Fractional CISO from month 0, and a Security Lead hired by month 4. A Risk & Compliance committee meets monthly. An AI governance board approves agent autonomy changes.</p></div>
+      <div class="card"><b>Testing cadence</b><p class="muted" style="margin:6px 0 0;font-size:14px">Scans run on every PR, DAST weekly, a third-party pentest before launch and yearly, AI red-teaming quarterly, and a public bug bounty 3 months after launch.</p></div>
+      <div class="card"><b>Budget (Year 1)</b><p class="muted" style="margin:6px 0 0;font-size:14px">About $420k: people ($260k), tooling ($90k), pentest and audits ($70k). That's roughly 8% of the seed round, sized for a trust-sensitive marketplace.</p></div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-foot"><div class="wrap-w"><div class="row between wrap" style="gap:10px"><span>eBuzz.ai: architecture v1.0</span><span><a href="roadmap.html">Build roadmap →</a> · <a href="docs.html?d=plan">Business plan</a> · <a href="https://github.com/ravikrali/ebuzz-demo">Source</a></span></div>
+<p style="margin:10px 0 0">Vendor names are suggestions based on public information as of September 2026. Validate pricing, contracts and certifications during procurement.</p></div></footer>
+
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/arch-data.js"></script>
+<script>
+(function () {
+  const { $, $$, esc } = EB, A = window.ARCH;
+  document.getElementById('brand').insertAdjacentHTML('afterbegin', EB.logo());
+  const tb = $('#themeBtn'); tb.innerHTML = EB.icon('sun'); tb.onclick = EB.toggleTheme;
+  $('#nTools').textContent = A.tools.length;
+
+  /* ---------- logical architecture diagram (generated SVG, theme-aware) ---------- */
+  const W = 1180;
+  let s = '';
+  const box = (x, y, w, h, t, sub, style = 'b') => {
+    const fill = { b: 'var(--surface)', a: 'var(--accent-soft)', v: 'var(--violet-soft)', g: 'var(--green-soft)', bl: 'var(--blue-soft)', r: 'var(--red-soft)', s2: 'var(--surface-2)' }[style];
+    s += `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" fill="${fill}" stroke="var(--line)"/>`;
+    s += `<text x="${x + w / 2}" y="${y + (sub ? h / 2 - 3 : h / 2 + 4)}" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">${esc(t)}</text>`;
+    if (sub) s += `<text x="${x + w / 2}" y="${y + h / 2 + 13}" text-anchor="middle" font-size="10.5" fill="var(--muted)">${esc(sub)}</text>`;
+  };
+  const band = (y, h, label, fill) => { s += `<rect x="70" y="${y}" width="${W - 210}" height="${h}" rx="14" fill="${fill}" stroke="var(--line)" stroke-dasharray="0"/><text x="84" y="${y + 18}" font-size="11" font-weight="700" letter-spacing=".08em" fill="var(--muted)">${label}</text>`; };
+  const row = (y, h, items, style, x0 = 84, x1 = W - 154, gap = 10) => { const w = (x1 - x0 - gap * (items.length - 1)) / items.length; items.forEach((it, i) => box(x0 + i * (w + gap), y, w, h, it[0], it[1], style)); };
+  const arrow = (x, y1, y2) => { s += `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" stroke="var(--muted)" stroke-width="1.6" marker-end="url(#ah)"/>`; };
+
+  band(10, 118, 'CLIENTS & CHANNELS', 'var(--surface-2)');
+  row(32, 44, [['Shopper web/PWA', 'Concierge · Play · Wallet'], ['iOS / Android', 'React Native'], ['Deal Room', 'vendor managers'], ['Supplier Hub', 'ops · catalog · team'], ['Admin Console', 'finance · limits · RBAC'], ['Agent Ops', 'approvals · fleet'], ['External AI agents', 'UCP / ACP']], 'b');
+  row(84, 34, [['On-device SQLite', ''], ['Sync client + outbox', ''], ['E2EE vault (AES-GCM)', ''], ['Device-only memory', ''], ['Chat UI component kit', '']], 'g');
+  arrow(W / 2 - 40, 128, 146);
+  band(146, 70, 'EDGE & ACCESS', 'var(--surface-2)');
+  row(166, 40, [['CDN · WAF · Bot mgmt', 'Cloudflare'], ['API gateway', 'GraphQL + REST'], ['Realtime', 'WebSockets (Ably)'], ['Identity', 'passkeys · SSO · MFA'], ['Authorization', 'OpenFGA RBAC/ReBAC']], 'bl');
+  arrow(W / 2 - 40, 216, 234);
+  // services + agent platform side by side
+  s += `<rect x="70" y="234" width="${(W - 210) * 0.6}" height="208" rx="14" fill="var(--surface-2)" stroke="var(--line)"/><text x="84" y="252" font-size="11" font-weight="700" letter-spacing=".08em" fill="var(--muted)">DOMAIN SERVICES</text>`;
+  const sx0 = 84, sx1 = 70 + (W - 210) * 0.6 - 14;
+  row(262, 40, [['Conversation', 'Concierge sessions'], ['Catalog & Search', 'hybrid + vector'], ['Deal Room', 'offer engine']], 'a', sx0, sx1);
+  row(310, 40, [['Cart · Checkout · Orders', ''], ['Wallet & Ledger', 'double-entry'], ['Games & Prize governor', 'win limits']], 'a', sx0, sx1);
+  row(358, 40, [['Vendors & Contracts', 'KYB · e-sign'], ['Payouts & Finance', 'recon · tax'], ['Sync service', 'rules · change feed']], 'a', sx0, sx1);
+  row(406, 28, [['Notifications', ''], ['Content CMS', ''], ['Reviews & Trust', '']], 'b', sx0, sx1);
+  const ax = 70 + (W - 210) * 0.6 + 12, aw = (W - 210) * 0.4 - 12;
+  s += `<rect x="${ax}" y="234" width="${aw}" height="208" rx="14" fill="var(--violet-soft)" stroke="var(--line)"/><text x="${ax + 14}" y="252" font-size="11" font-weight="700" letter-spacing=".08em" fill="var(--violet-ink)">AGENT PLATFORM</text>`;
+  row(262, 40, [['Orchestrator', 'Temporal workflows'], ['Agent runtime', 'Claude Agent SDK']], 'b', ax + 14, ax + aw - 14);
+  row(310, 40, [['MCP tool servers', 'least-privilege'], ['Model gateway', 'routing · budgets · PII filter']], 'b', ax + 14, ax + aw - 14);
+  row(358, 40, [['Approval queue', 'humans on money/content'], ['Evals & tracing', 'Langfuse · CI evals']], 'b', ax + 14, ax + aw - 14);
+  row(406, 28, [['Claude Opus 5 · Sonnet 5 · Haiku 4.5', '']], 'v', ax + 14, ax + aw - 14);
+  arrow(W / 2 - 40, 442, 460);
+  band(460, 70, 'DATA & EVENTS', 'var(--surface-2)');
+  row(480, 40, [['PostgreSQL', 'Aurora · RLS'], ['Event bus', 'Kafka'], ['Cache', 'Valkey/Redis'], ['Search + vectors', 'OpenSearch · pgvector'], ['Object storage', 'S3 (media, docs)'], ['Warehouse', 'Snowflake (pseudonymous)'], ['KMS · Secrets', '']], 'b');
+  arrow(W / 2 - 40, 530, 548);
+  band(548, 70, 'EXTERNAL SERVICES', 'var(--surface-2)');
+  row(568, 40, [['Stripe Connect', 'pay · KYC · payouts'], ['Stripe Tax', ''], ['EasyPost', 'shipping'], ['Dropbox Sign', 'contracts'], ['Ads', 'GAM · AdMob · MAX'], ['YouTube · CMS', 'content'], ['Postmark · Twilio', ''], ['Licensed trend data', '']], 'b');
+  // cross-cutting planes
+  s += `<rect x="${W - 130}" y="10" width="120" height="608" rx="14" fill="var(--red-soft)" stroke="var(--line)"/>`;
+  s += `<text x="${W - 70}" y="30" text-anchor="middle" font-size="11" font-weight="700" fill="var(--red)">SECURITY &amp;</text><text x="${W - 70}" y="44" text-anchor="middle" font-size="11" font-weight="700" fill="var(--red)">COMPLIANCE</text>`;
+  ['Zero-trust IAM', 'mTLS service mesh', 'KMS encryption', 'E2EE PII vault', 'Audit log (immutable)', 'SIEM detections', 'DLP & data maps', 'Policy-as-code', 'Vanta evidence', 'Consent & DSR'].forEach((t, i) => { s += `<rect x="${W - 122}" y="${60 + i * 54}" width="104" height="44" rx="8" fill="var(--surface)" stroke="var(--line)"/><text x="${W - 70}" y="${86 + i * 54}" text-anchor="middle" font-size="10.5" font-weight="600" fill="var(--ink)">${t}</text>`; });
+  s += `<rect x="10" y="10" width="50" height="608" rx="14" fill="var(--blue-soft)" stroke="var(--line)"/><text transform="translate(40 314) rotate(-90)" text-anchor="middle" font-size="11.5" font-weight="700" letter-spacing=".08em" fill="var(--blue)">OBSERVABILITY · OpenTelemetry · Grafana · Sentry</text>`;
+  $('#logicalDiagram').innerHTML = `<svg viewBox="0 0 ${W} 628" xmlns="http://www.w3.org/2000/svg"><defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--muted)"/></marker></defs>${s}</svg>`;
+
+  /* ---------- sequence diagram ---------- */
+  const lanes = ['Shopper app', 'Gateway / Realtime', 'Negotiation Broker agent', 'Deal Room service', 'Vendor (auto-bid / manager)', 'Ledger 'Vendor auto-bid / Vendor Manager', 'Ledger & Checkout' Checkout'];
+  const steps = [
+    [0, 1, 'POST /deals/request (session, shortlist)'], [1, 3, 'rate-limit & authz check · open 10-min window'], [3, 2, 'deal.requested event'],
+    [2, 4, 'notify 3 vendors · anonymised context + price to beat'], [4, 3, 'auto-bid rule answers instantly (≥ floor)'], [4, 3, '"Need 5 min" hold'],
+    [3, 1, 'offer.created / hold events'], [1, 0, 'live offer cards stream into chat'], [2, 3, 'guardrails: floor, max rounds, collusion signals'],
+    [0, 5, 'accept offer → checkout (signed offer id)'], [5, 3, 'offer.accepted → close session, notify losers'],
+  ];
+  const lw = 200, sw = lw * lanes.length + 40, top = 52, rh = 36;
+  let q = lanes.map((l, i) => `<rect x="${20 + i * lw}" y="8" width="${lw - 16}" height="32" rx="8" fill="${i === 2 ? 'var(--violet-soft)' : 'var(--accent-soft)'}" stroke="var(--line)"/><text x="${12 + i * lw + lw / 2}" y="28" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--ink)">${l}</text><line x1="${12 + i * lw + lw / 2}" y1="40" x2="${12 + i * lw + lw / 2}" y2="${top + steps.length * rh + 10}" stroke="var(--line)" stroke-dasharray="4 4"/>`).join('');
+  steps.forEach(([a, b, t], i) => {
+    const x1 = 12 + a * lw + lw / 2, x2 = 12 + b * lw + lw / 2, y = top + i * rh + 18;
+    q += `<line x1="${x1}" y1="${y}" x2="${x2 + (x2 > x1 ? -4 : 4)}" y2="${y}" stroke="var(--accent-ink)" stroke-width="1.6" marker-end="url(#ah2)"/>`;
+    q += `<circle cx="${x1}" cy="${y}" r="9" fill="var(--accent)"/><text x="${x1}" y="${y + 4}" text-anchor="middle" font-size="10" font-weight="700" fill="var(--on-accent)">${i + 1}</text>`;
+    q += `<text x="${(x1 + x2) / 2}" y="${y - 6}" text-anchor="middle" font-size="11" fill="var(--ink-2)">${esc(t)}</text>`;
+  });
+  $('#flowDiagram').innerHTML = `<svg viewBox="0 0 ${sw} ${top + steps.length * rh + 20}" xmlns="http://www.w3.org/2000/svg"><defs><marker id="ah2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--accent-ink)"/></marker></defs>${q}</svg>`;
+
+  /* ---------- deployment ---------- */
+  $('#deployTable').innerHTML = EB.table(['Environment', 'Purpose', 'Data', 'Infra', 'Promotion'], [
+    ['<b>Agent sandboxes</b>', 'Where build agents write and test code', 'Synthetic only', 'Ephemeral containers, no prod network, scoped tokens', 'PR'],
+    ['<b>Preview (per PR)</b>', 'Review UI & API changes', 'Synthetic seed', 'Ephemeral namespace on EKS', 'Auto on PR'],
+    ['<b>Staging</b>', 'Integration, evals, load & security tests', 'Synthetic + anonymised', 'Mirror of prod (smaller)', 'Merge to main'],
+    ['<b>Production</b> · us-east-1', 'Live traffic', 'Minimised central data; PII only as ciphertext', 'Multi-AZ EKS, Aurora, MSK; Cloudflare edge', 'Canary 5% → 25% → 100% with auto-rollback'],
+    ['<b>DR</b> · us-west-2', 'Disaster recovery', 'Cross-region snapshots & replicas', 'Warm standby (pilot light)', 'Failover drill quarterly'],
+    ['<b>EU region</b> (Year 4)', 'Data residency for EU/UK', 'EU-only data', 'eu-central-1 cell', 'Region-scoped'],
+  ], { left: true });
+
+  /* ---------- tools ---------- */
+  const layers = ['All', ...new Set(A.tools.map((t) => t.layer))];
+  let cur = 'All';
+  const renderTools = () => {
+    $('#layerFilter').innerHTML = layers.map((l) => `<button class="chip ${l === cur ? 'on' : ''}" data-l="${l}">${l} <span class="muted">${l === 'All' ? A.tools.length : A.tools.filter((t) => t.layer === l).length}</span></button>`).join('');
+    $$('#layerFilter [data-l]').forEach((b) => (b.onclick = () => { cur = b.dataset.l; renderTools(); }));
+    $('#toolList').innerHTML = A.tools.filter((t) => cur === 'All' || t.layer === cur).map((t) => `
+      <details class="tool"><summary><div><div class="layer-tag muted">${t.layer}</div><div class="cat" style="color:var(--ink)">${t.cat}</div></div><div><span class="tag honey">Recommended</span> <span class="pick">${esc(t.pick)}</span><div class="muted" style="font-size:13px;margin-top:3px">${esc(t.why)}</div></div><span class="more">${t.alts.length} alternatives</span></summary>
+        <div class="body">
+          <div class="pc" style="margin-bottom:12px"><div><b class="pro">Pros</b><ul>${t.pros.map((p) => `<li>${esc(p)}</li>`).join('')}</ul></div><div><b class="con">Cons</b><ul>${t.cons.map((p) => `<li>${esc(p)}</li>`).join('')}</ul></div></div>
+          ${EB.table(['Alternative', 'Pros', 'Cons'], t.alts.map(([n, p, c]) => [`<b>${esc(n)}</b>`, `<span class="pro">+</span> ${esc(p)}`, `<span class="con">−</span> ${esc(c)}`]), { left: true })}
+        </div></details>`).join('');
+  };
+  renderTools();
+
+  /* ---------- security ---------- */
+  $('#principlesGrid').innerHTML = A.principles.map(([t, d]) => `<div class="card"><div class="row" style="gap:8px">${EB.icon('shield')}<b>${t}</b></div><p class="muted" style="margin:6px 0 0;font-size:14px">${d}</p></div>`).join('');
+  $('#controlsTable').innerHTML = EB.table(['Domain', 'Controls'], A.controls.map(([a, b]) => [`<b>${a}</b>`, b]), { left: true });
+  $('#llmTable').innerHTML = EB.table(['Risk', 'Our controls'], A.llm.map(([a, b]) => [`<b style="white-space:nowrap">${a}</b>`, b]), { left: true });
+  $('#threatTable').innerHTML = EB.table(['Asset', 'Threat', 'STRIDE', 'Mitigations'], A.threats.map(([a, b, c, d]) => [`<b>${a}</b>`, b, `<span class="tag red">${c}</span>`, d]), { left: true });
+  $('#complianceTable').innerHTML = EB.table(['Framework / law', 'Why it applies', 'Key controls', 'Target', 'Owner'], A.compliance.map(([a, b, c, d, e]) => [`<b>${a}</b>`, b, c, `<span class="tag blue">${d}</span>`, e]), { left: true });
+
+  /* ---------- secure pipeline diagram ---------- */
+  const st = [['Ticket', 'scoped task'], ['Agent sandbox', 'no prod access'], ['PR + tests', 'unit · contract · e2e'], ['Scans', 'SAST · SCA · secrets · IaC'], ['Review', 'review agent + human'], ['Signed build', 'SBOM · SLSA L3'], ['Staging', 'evals · DAST · load'], ['Canary', '5% → 100%'], ['Monitor', 'SLOs · auto-rollback']];
+  const bw = 124, gap = 14;
+  let p = st.map(([a, b], i) => `<rect x="${10 + i * (bw + gap)}" y="18" width="${bw}" height="56" rx="10" fill="${[4].includes(i) ? 'var(--violet-soft)' : [3, 5].includes(i) ? 'var(--red-soft)' : 'var(--accent-soft)'}" stroke="var(--line)"/><text x="${10 + i * (bw + gap) + bw / 2}" y="42" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">${a}</text><text x="${10 + i * (bw + gap) + bw / 2}" y="60" text-anchor="middle" font-size="10.5" fill="var(--muted)">${b}</text>${i < st.length - 1 ? `<line x1="${10 + i * (bw + gap) + bw}" y1="46" x2="${10 + (i + 1) * (bw + gap) - 2}" y2="46" stroke="var(--muted)" stroke-width="1.6" marker-end="url(#ah3)"/>` : ''}`).join('');
+  p += `<text x="${10 + 4 * (bw + gap) + bw / 2}" y="94" text-anchor="middle" font-size="10.5" fill="var(--violet-ink)">2-person rule on payments, auth, crypto, RBAC paths</text>`;
+  $('#sdlcDiagram').innerHTML = `<svg viewBox="0 0 ${20 + st.length * (bw + gap)} 104" xmlns="http://www.w3.org/2000/svg"><defs><marker id="ah3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--muted)"/></marker></defs>${p}</svg>`;
+})();
+</script>
+</body>
+</html>

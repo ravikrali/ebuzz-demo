@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>eBuzz Build Roadmap</title>
+<meta name="description" content="How a team of AI agents, supervised by a small human team, builds, secures and deploys eBuzz.ai end to end in 26 weeks, with token, time and dependency estimates.">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/ebuzz.css">
+<style>
+  .page-hero { padding: 44px 0 10px; }
+  .page-hero h1 { font-size: clamp(34px, 4.6vw, 52px); }
+  .page-hero p { color: var(--ink-2); font-size: 17.5px; max-width: 780px; }
+  .subnav { position: sticky; top: 62px; z-index: 15; background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(8px); padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .subnav .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .subnav a.chip { text-decoration: none; flex: none; }
+  .gantt { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; overflow-x: auto; }
+  .gantt table { border-collapse: collapse; min-width: 1080px; width: 100%; font-size: 12.5px; }
+  .gantt th, .gantt td { padding: 0; border-bottom: 1px solid var(--line); }
+  .gantt th { font-size: 11px; color: var(--muted); font-weight: 600; height: 30px; text-align: center; background: var(--surface-2); }
+  .gantt td.lbl, .gantt th.lbl { position: sticky; left: 0; background: var(--surface); z-index: 1; text-align: left; padding: 7px 12px; min-width: 270px; white-space: nowrap; border-right: 1px solid var(--line); }
+  .gantt th.lbl { background: var(--surface-2); }
+  .gantt td.cell { height: 34px; position: relative; border-left: 1px dashed color-mix(in srgb, var(--line) 60%, transparent); }
+  .bar { position: absolute; top: 8px; height: 18px; border-radius: 6px; }
+  .gantt tr.phase td.lbl { font-weight: 700; background: var(--surface-2); }
+  .gantt tr.phase td.cell { background: var(--surface-2); }
+  .ms { position: absolute; top: 9px; width: 14px; height: 14px; transform: rotate(45deg); background: var(--red); left: calc(50% - 7px); }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; margin-top: 10px; }
+  .legend i { display: inline-block; width: 14px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: middle; }
+  .agent-card summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 64px 1fr auto; gap: 12px; align-items: center; padding: 14px 16px; }
+  .agent-card summary::-webkit-details-marker { display: none; }
+  .agent-card { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+  .agent-card + .agent-card { margin-top: 10px; }
+  .agent-card .body { padding: 0 16px 16px; display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; }
+  .agent-card h4 { font-family: var(--font); font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 6px; }
+  .agent-card ul { margin: 0; padding-left: 18px; font-size: 14px; }
+  .metric { font-family: var(--display); font-weight: 700; font-size: 15px; }
+  .pipeline { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; counter-reset: st; }
+  .pipeline .st { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; position: relative; }
+  .pipeline .st::before { counter-increment: st; content: counter(st); position: absolute; top: -10px; left: 10px; background: var(--accent); color: var(--on-accent); font-weight: 700; font-size: 12px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; }
+  .assump input { width: 90px; }
+  @media (max-width: 900px) { .agent-card .body { grid-template-columns: 1fr; } .agent-card summary { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header class="site-nav"><div class="in">
+  <a class="brand" href="index.html" id="brand"><span>eBuzz<b>.ai</b></span></a>
+  <nav class="links">
+    <a href="index.html#portals" class="hide-m">Prototype</a>
+    <a href="architecture.html">Architecture</a>
+    <a href="roadmap.html" style="color:var(--ink)">Roadmap</a>
+    <a href="docs.html?d=plan" class="hide-m">Business plan</a>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode"></button>
+  </nav>
+</div></header>
+
+<main class="wrap-w">
+  <section class="page-hero">
+    <div class="eyebrow">Build roadmap · agent-driven delivery · v1.0</div>
+    <h1>How AI agents build & ship eBuzz</h1>
+    <p>A fleet of <b id="hAgents">29</b> specialised build agents writes, tests, secures and deploys the platform. A small human team supervises and approves every gate that matters: architecture, security, money, legal and production releases. It takes 26 weeks from kickoff to public launch in the wedge vertical.</p>
+    <div class="kpis" id="topKpis" style="margin-top:18px"></div>
+  </section>
+
+  <nav class="subnav" aria-label="Sections"><div class="chips">
+    <a class="chip" href="#timeline">Timeline</a><a class="chip" href="#how">How agents build & deploy</a><a class="chip" href="#plan">Detailed plan</a><a class="chip" href="#tokens">Tokens & cost</a><a class="chip" href="#humans">Human team</a><a class="chip" href="#risks">Risks</a>
+  </div></nav>
+
+  <section class="section" id="timeline" style="border-top:0">
+    <h2>Timeline (26 weeks)</h2>
+    <p class="sub">Phases, agents and milestone gates (◆). Bar colour shows the main model each agent uses.</p>
+    <div class="gantt" id="gantt"></div>
+    <div class="legend"><span><i style="background:var(--violet)"></i>Claude Opus 5</span><span><i style="background:var(--blue)"></i>Claude Sonnet 5</span><span><i style="background:var(--green)"></i>Claude Haiku 4.5</span><span><i style="background:var(--red);transform:rotate(45deg);width:10px"></i>Milestone gate</span></div>
+    <div id="msTable" style="margin-top:16px"></div>
+  </section>
+
+  <section class="section" id="how">
+    <h2>How agents build & deploy, end to end</h2>
+    <p class="sub">Every change moves through the same governed pipeline. Agents do the work, and people approve the steps that carry risk.</p>
+    <div class="pipeline">
+      <div class="st"><b>Plan</b><div class="muted" style="font-size:13px">The Orchestrator turns the PRD into tickets with acceptance criteria and dependencies.</div></div>
+      <div class="st"><b>Build in a sandbox</b><div class="muted" style="font-size:13px">The engineer agent works in an isolated container with synthetic data and scoped, short-lived credentials.</div></div>
+      <div class="st"><b>Test</b><div class="muted" style="font-size:13px">Unit, contract, e2e, accessibility and eval suites are written alongside the code.</div></div>
+      <div class="st"><b>Pull request</b><div class="muted" style="font-size:13px">Nothing merges without a PR: SAST, SCA, secret and IaC scans run automatically.</div></div>
+      <div class="st"><b>Review</b><div class="muted" style="font-size:13px">The Code Review agent reviews every PR. A human also approves protected paths (money, auth, crypto, RBAC).</div></div>
+      <div class="st"><b>Signed build</b><div class="muted" style="font-size:13px">Container images are signed, with SBOM and SLSA provenance.</div></div>
+      <div class="st"><b>Staging</b><div class="muted" style="font-size:13px">Evals, DAST, load tests and a preview for human UX sign-off.</div></div>
+      <div class="st"><b>Canary deploy</b><div class="muted" style="font-size:13px">The Release agent rolls out 5% → 25% → 100% via Argo CD and flags, with auto-rollback on SLO breach.</div></div>
+      <div class="st"><b>Operate</b><div class="muted" style="font-size:13px">The SRE agent watches SLOs and cost. Incidents get a human commander.</div></div>
+    </div>
+    <div class="grid3" style="margin-top:18px">
+      <div class="card"><b>🔐 Guardrails for build agents</b><ul style="font-size:14px;padding-left:18px;margin:8px 0 0"><li>No production data or credentials, ever</li><li>One scoped GitHub token per agent; no direct pushes to main</li><li>Network egress allow-list (package registries, vendor sandboxes)</li><li>Token and time budgets per ticket; the Orchestrator kills runaway loops</li><li>Full transcript and tool-call audit trail in Langfuse</li></ul></div>
+      <div class="card"><b>👩‍💻 Human-in-the-loop gates</b><ul style="font-size:14px;padding-left:18px;margin:8px 0 0"><li>Architecture & threat models (CTO, Security Lead)</li><li>Protected-path PRs: two-person rule</li><li>Legal documents (outside counsel)</li><li>Every production release touching money or auth</li><li>Go/no-go at week 22 and launch</li></ul></div>
+      <div class="card"><b>📏 Definition of done</b><ul style="font-size:14px;padding-left:18px;margin:8px 0 0"><li>Acceptance criteria pass in e2e tests</li><li>No new critical/high security findings</li><li>Accessibility checks pass</li><li>Docs & runbooks updated</li><li>Agent evals ≥ threshold (for AI features)</li></ul></div>
+    </div>
+  </section>
+
+  <section class="section" id="plan">
+    <h2>Detailed plan by agent</h2>
+    <p class="sub">Name, purpose, goal, tasks, deliverables, dependencies, human gate, estimated tokens, time and cost. Click an agent to expand it.</p>
+    <div class="row wrap between" style="margin-bottom:12px;gap:10px"><div class="chips" id="phaseFilter"></div><button class="btn sm" id="csvBtn">Export plan (CSV)</button></div>
+    <div id="summaryTable" style="margin-bottom:16px"></div>
+    <div id="cards"></div>
+  </section>
+
+  <section class="section" id="tokens">
+    <h2>Token usage & cost model</h2>
+    <p class="sub">Estimates cover all tokens the agents process, including cached context re-reads. Change the assumptions and every number on this page recalculates.</p>
+    <div class="grid2">
+      <div class="card assump"><div class="card-title" style="margin-bottom:10px">Assumptions</div>
+        <div class="grid2" style="gap:10px">
+          <label class="field">Opus 5 $/M in · out<div class="row"><input type="number" step="0.5" data-a="opusIn" value="5"><input type="number" step="1" data-a="opusOut" value="25"></div></label>
+          <label class="field">Sonnet 5 $/M in · out<div class="row"><input type="number" step="0.5" data-a="sonIn" value="2"><input type="number" step="1" data-a="sonOut" value="10"></div></label>
+          <label class="field">Haiku 4.5 $/M in · out<div class="row"><input type="number" step="0.25" data-a="haiIn" value="1"><input type="number" step="1" data-a="haiOut" value="5"></div></label>
+          <label class="field">Output share of tokens (%)<input type="number" data-a="outShare" value="8"></label>
+          <label class="field">Cached share of input (%)<input type="number" data-a="cacheShare" value="75"></label>
+          <label class="field">Cache read price (% of input)<input type="number" data-a="cacheRead" value="10"></label>
+          <label class="field">Tokens per agent-hour (M)<input type="number" step="0.5" data-a="tph" value="2"></label>
+          <label class="field">Rework contingency (%)<input type="number" data-a="contingency" value="30"></label>
+        </div>
+        <p class="muted" style="font-size:12.5px;margin:10px 0 0">Prices are Anthropic first-party list prices per million tokens as of September 2026. Cache writes are charged at 1.25× input. Check current pricing before budgeting.</p></div>
+      <div class="card"><div class="card-title" style="margin-bottom:10px">Totals</div><div id="totals"></div>
+        <div class="card-title" style="margin:16px 0 8px">Tokens by phase</div><div id="byPhase"></div></div>
+    </div>
+  </section>
+
+  <section class="section" id="humans">
+    <h2>Human team (supervising the agents)</h2>
+    <p class="sub">About 9 FTE over 26 weeks. A traditional team building the same scope would need roughly 35–45 engineers, designers and QA staff.</p>
+    <div id="humanTable"></div>
+  </section>
+
+  <section class="section" id="risks">
+    <h2>Delivery risks</h2>
+    <div id="riskTable"></div>
+  </section>
+</main>
+
+<footer class="site-foot"><div class="wrap-w"><div class="row between wrap" style="gap:10px"><span>eBuzz.ai: build roadmap v1.0</span><span><a href="architecture.html">← Architecture</a> · <a href="docs.html?d=plan">Business plan</a> · <a href="https://github.com/ravikrali/ebuzz-demo">Source</a></span></div>
+<p style="margin:10px 0 0">Token, time and cost figures are planning estimates for discussion. Real usage depends on codebase size, rework, model versions and caching. Track actuals weekly and re-forecast.</p></div></footer>
+
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/roadmap-data.js"></script>
+<script>
+(function () {
+  const { $, $$, esc, money } = EB, R = window.ROADMAP;
+  document.getElementById('brand').insertAdjacentHTML('afterbegin', EB.logo());
+  const tb = $('#themeBtn'); tb.innerHTML = EB.icon('sun'); tb.onclick = EB.toggleTheme;
+  $('#csvBtn').textContent = '⤓ Export plan (CSV)';
+  const MODEL_COLOR = { 'Opus 5': 'var(--violet)', 'Sonnet 5': 'var(--blue)', 'Haiku 4.5': 'var(--green)' };
+  const byId = Object.fromEntries(R.agents.map((a) => [a.id, a]));
+  const phaseName = Object.fromEntries(R.phases.map((p) => [p.id, p.name]));
+
+  /* ---------- cost model ---------- */
+  const A = {};
+  const readA = () => $$('[data-a]').forEach((i) => (A[i.dataset.a] = +i.value));
+  const rate = (model) => {
+    const [pin, pout] = model === 'Opus 5' ? [A.opusIn, A.opusOut] : model === 'Sonnet 5' ? [A.sonIn, A.sonOut] : [A.haiIn, A.haiOut];
+    const o = A.outShare / 100, c = A.cacheShare / 100;
+    const inputRate = c * pin * (A.cacheRead / 100) + (1 - c) * pin * 1.25; // uncached input written to cache at 1.25×
+    return (1 - o) * inputRate + o * pout; // $ per million tokens, blended
+  };
+  const cost = (a) => a.tokens * rate(a.model) * (1 + A.contingency / 100);
+  const hours = (a) => (a.tokens * (1 + A.contingency / 100)) / A.tph;
+  const fmtT = (m) => (m >= 1000 ? (m / 1000).toFixed(2) + 'B' : m.toFixed(0) + 'M');
+
+  /* ---------- gantt ---------- */
+  const weeks = Array.from({ length: R.weeks }, (_, i) => i + 1);
+  const bar = (s, e, color, h = 18, top = 8) => `<div class="bar" style="left:calc(${((s - 1) / R.weeks) * 100}% + 2px);width:calc(${((e - s + 1) / R.weeks) * 100}% - 4px);background:${color};height:${h}px;top:${top}px"></div>`;
+  const row = (label, inner, cls = '') => `<tr class="${cls}"><td class="lbl">${label}</td><td class="cell" colspan="${R.weeks}" style="position:relative">${inner}</td></tr>`;
+  let g = `<table><thead><tr><th class="lbl">Phase / agent</th>${weeks.map((w) => `<th>W${w}</th>`).join('')}</tr></thead><tbody>`;
+  g += row('<b>Milestones</b>', R.milestones.map(([w, t]) => `<div class="ms" title="W${w}: ${esc(t)}" style="left:calc(${((w - 0.5) / R.weeks) * 100}% - 7px)"></div>`).join(''), 'phase');
+  R.phases.forEach((p) => {
+    g += row(`${p.id} · ${esc(p.name)}`, bar(p.start, p.end, `color-mix(in srgb, ${p.color} 35%, transparent)`, 16, 9), 'phase');
+    R.agents.filter((a) => a.phase === p.id).forEach((a) => { g += row(`<span class="muted mono" style="font-size:11px">${a.id}</span> ${esc(a.name)}`, bar(a.start, a.end, MODEL_COLOR[a.model])); });
+  });
+  $('#gantt').innerHTML = g + '</tbody></table>';
+  $('#msTable').innerHTML = EB.table(['Week', 'Milestone / gate'], R.milestones.map(([w, t]) => [`<b>W${w}</b>`, esc(t)]), { left: true });
+
+  /* ---------- plan ---------- */
+  let phaseSel = 'All';
+  const renderPlan = () => {
+    $('#phaseFilter').innerHTML = ['All', ...R.phases.map((p) => p.id)].map((p) => `<button class="chip ${p === phaseSel ? 'on' : ''}" data-p="${p}" title="${p === 'All' ? '' : esc(phaseName[p])}">${p === 'All' ? 'All phases' : p}</button>`).join('');
+    $$('#phaseFilter [data-p]').forEach((b) => (b.onclick = () => { phaseSel = b.dataset.p; renderPlan(); }));
+    const list = R.agents.filter((a) => phaseSel === 'All' || a.phase === phaseSel);
+    $('#summaryTable').innerHTML = EB.table(['ID', 'Agent', 'Model', 'Phase', 'Weeks', 'Depends on', 'Tokens', 'Agent-hrs', 'Est. cost'], list.map((a) => [
+      `<span class="mono">${a.id}</span>`, `<b>${esc(a.name)}</b>`, `<span class="tag" style="color:${MODEL_COLOR[a.model]}">${a.model}</span>`, a.phase, `W${a.start}–W${a.end}`,
+      a.deps.length ? a.deps.map((d) => `<span class="mono" title="${esc(byId[d].name)}">${d}</span>`).join(', ') : '-', fmtT(a.tokens * (1 + A.contingency / 100)), Math.round(hours(a)).toLocaleString(), money(cost(a), 0),
+    ]), { right: [6, 7, 8] });
+    $('#cards').innerHTML = list.map((a) => `
+      <details class="agent-card"><summary><span class="avatar" style="width:52px;height:52px;border-radius:14px;background:color-mix(in srgb, ${MODEL_COLOR[a.model]} 18%, var(--surface));color:${MODEL_COLOR[a.model]};font-size:13px">${a.id}</span>
+        <div><b style="font-size:16px">${esc(a.name)}</b><div class="muted" style="font-size:13.5px">${esc(a.purpose)}</div></div>
+        <div class="row wrap" style="gap:14px;justify-content:flex-end"><div><div class="muted" style="font-size:11px">TOKENS</div><div class="metric">${fmtT(a.tokens * (1 + A.contingency / 100))}</div></div><div><div class="muted" style="font-size:11px">TIME</div><div class="metric">W${a.start}–${a.end}</div></div><div><div class="muted" style="font-size:11px">COST</div><div class="metric">${money(cost(a), 0)}</div></div></div></summary>
+        <div class="body">
+          <div class="stack">
+            <div><h4>Goal</h4><div style="font-size:14px">${esc(a.goal)}</div></div>
+            <div><h4>Tasks</h4><ul>${a.tasks.map((t) => `<li>${esc(t)}</li>`).join('')}</ul></div>
+            <div><h4>Deliverables</h4><div class="chips">${a.deliverables.map((d) => `<span class="tag">${esc(d)}</span>`).join('')}</div></div>
+          </div>
+          <div class="stack">
+            <div class="kpis" style="grid-template-columns:1fr 1fr"><div class="kpi"><div class="l">Model</div><div class="v" style="font-size:16px;color:${MODEL_COLOR[a.model]}">${a.model}</div></div><div class="kpi"><div class="l">Phase</div><div class="v" style="font-size:16px">${a.phase}</div><div class="d muted">${esc(phaseName[a.phase])}</div></div><div class="kpi"><div class="l">Calendar</div><div class="v" style="font-size:16px">${a.end - a.start + 1} weeks</div><div class="d muted">W${a.start}–W${a.end}</div></div><div class="kpi"><div class="l">Agent compute</div><div class="v" style="font-size:16px">${Math.round(hours(a)).toLocaleString()} h</div></div></div>
+            <div><h4>Dependencies</h4><div style="font-size:14px">${a.deps.length ? a.deps.map((d) => `<span class="mono">${d}</span> ${esc(byId[d].name)}`).join('<br>') : 'None: can start immediately'}</div></div>
+            <div><h4>Needed by</h4><div style="font-size:14px">${R.agents.filter((x) => x.deps.includes(a.id)).map((x) => `<span class="mono">${x.id}</span> ${esc(x.name)}`).join('<br>') || '-'}</div></div>
+            <div><h4>Human gate</h4><div class="warn-note">${esc(a.gate)}</div></div>
+            <div><h4>Tools</h4><div class="chips">${a.tools.map((t) => `<span class="tag violet">${esc(t)}</span>`).join('')}</div></div>
+          </div>
+        </div></details>`).join('');
+  };
+
+  /* ---------- totals ---------- */
+  const renderTotals = () => {
+    const tot = R.agents.reduce((s, a) => s + a.tokens, 0) * (1 + A.contingency / 100);
+    const c = R.agents.reduce((s, a) => s + cost(a), 0), h = R.agents.reduce((s, a) => s + hours(a), 0);
+    const byModel = ['Opus 5', 'Sonnet 5', 'Haiku 4.5'].map((m) => [m, R.agents.filter((a) => a.model === m)]);
+    $('#topKpis').innerHTML = EB.kpis([['Build agents', R.agents.length], ['Calendar', '26 weeks', '9 milestone gates'], ['Total tokens', fmtT(tot), `incl. ${A.contingency}% rework`], ['Est. model cost', money(c, 0), 'agent build, all phases'], ['Agent compute', Math.round(h).toLocaleString() + ' h', `${(h / 26 / 40).toFixed(1)} "FTE-equivalents"`], ['Human team', '~9 FTE', 'supervision & gates']]);
+    $('#totals').innerHTML = EB.table(['Model', 'Agents', 'Tokens', 'Blended $/M', 'Cost'], [...byModel.map(([m, list]) => [`<b style="color:${MODEL_COLOR[m]}">${m}</b>`, list.length, fmtT(list.reduce((s, a) => s + a.tokens, 0) * (1 + A.contingency / 100)), money(rate(m)), money(list.reduce((s, a) => s + cost(a), 0), 0)]), { hl: true, cells: ['<b>Total</b>', R.agents.length, `<b>${fmtT(tot)}</b>`, money(c / tot), `<b>${money(c, 0)}</b>`] }], { right: [1, 2, 3, 4] });
+    const ph = R.phases.map((p) => [p, R.agents.filter((a) => a.phase === p.id).reduce((s, a) => s + a.tokens * (1 + A.contingency / 100), 0)]);
+    const mx = Math.max(...ph.map((x) => x[1]));
+    $('#byPhase').innerHTML = ph.map(([p, t]) => `<div style="margin:7px 0"><div class="row between" style="font-size:12.5px"><span>${p.id} · ${esc(p.name)}</span><b class="num">${fmtT(t)}</b></div><div class="meter"><i style="width:${(t / mx) * 100}%;background:${p.color}"></i></div></div>`).join('');
+  };
+
+  const all = () => { readA(); renderTotals(); renderPlan(); };
+  $$('[data-a]').forEach((i) => (i.oninput = all));
+  all();
+
+  $('#csvBtn').onclick = () => {
+    const cols = ['id', 'name', 'model', 'phase', 'start_week', 'end_week', 'purpose', 'goal', 'tasks', 'deliverables', 'dependencies', 'human_gate', 'tokens_M', 'agent_hours', 'est_cost_usd'];
+    const q = (v) => `"${String(v).replace(/"/g, '""')}"`;
+    const rows = R.agents.map((a) => [a.id, a.name, a.model, a.phase, a.start, a.end, a.purpose, a.goal, a.tasks.join('; '), a.deliverables.join('; '), a.deps.join(' '), a.gate, (a.tokens * (1 + A.contingency / 100)).toFixed(0), Math.round(hours(a)), Math.round(cost(a))].map(q).join(','));
+    const url = URL.createObjectURL(new Blob([[cols.join(','), ...rows].join('\n')], { type: 'text/csv' }));
+    const l = document.createElement('a'); l.href = url; l.download = 'ebuzz-agent-build-plan.csv'; l.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  $('#humanTable').innerHTML = EB.table(['Role', 'Responsibility', 'FTE'], R.humans.map(([a, b, c]) => [`<b>${a}</b>`, b, c]), { right: [2] });
+  $('#riskTable').innerHTML = EB.table(['Risk', 'Likelihood', 'Mitigation'], [
+    ['Agents produce plausible but wrong code in money paths', 'Medium', 'Property-based tests on invariants, two-person rule, reconciliation against Stripe in staging'],
+    ['Token spend overruns', 'Medium', 'Per-ticket budgets, prompt caching, Sonnet/Haiku for bulk work, weekly re-forecast'],
+    ['Integration sandboxes differ from production', 'Medium', 'Early vendor certification, contract tests, canary with real low-value transactions'],
+    ['Security findings late in the schedule', 'Medium', 'Threat modelling in week 2, scans on every PR, red-team from week 14, pentest at week 20 with 2 weeks buffer'],
+    ['Legal review of Deal Room or games changes scope', 'Low–Medium', 'Counsel engaged in week 2; feature flags let us launch without a contested feature'],
+    ['Human reviewers become the bottleneck', 'High', 'Protect reviewer time, batch low-risk PRs, auto-merge only for docs & tests'],
+    ['App store rejection (games/rewards)', 'Low', 'Pre-submission review against store guidelines; rewards framed as store credit, no real-money gambling'],
+  ], { left: true });
+})();
+</script>
+</body>
+</html>

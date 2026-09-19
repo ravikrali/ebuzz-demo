@@ -16,6 +16,8 @@
   <a class="brand" href="index.html" id="brand"><span>eBuzz<b>.ai</b></span></a>
   <nav class="links">
     <a href="index.html#portals">Prototype</a>
+    <a href="architecture.html">Architecture</a>
+    <a href="roadmap.html">Roadmap</a>
     <a href="docs.html?d=thesis" data-d="thesis">Thesis</a>
     <a href="docs.html?d=plan" data-d="plan">Business plan</a>
     <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode"></button>
@@ -46,6 +48,7 @@
     return;
   }
   // links between docs
+  doc.querySelectorAll('a[href^="../"]').forEach((a) => (a.href = a.getAttribute('href').slice(3)));
   doc.querySelectorAll('a[href$=".md"]').forEach((a) => { if (/BUSINESS_PLAN/.test(a.getAttribute('href'))) a.href = 'docs.html?d=plan'; else if (/THESIS/.test(a.getAttribute('href'))) a.href = 'docs.html?d=thesis'; });
   // responsive tables
   doc.querySelectorAll('table').forEach((t) => { const w = document.createElement('div'); w.className = 'table-wrap'; t.replaceWith(w); w.append(t); });

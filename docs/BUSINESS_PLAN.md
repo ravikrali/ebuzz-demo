@@ -356,6 +356,8 @@ Agentic commerce is projected (McKinsey) to reach **$3–5T** in annual revenue 
 
 ## 12. Technology plan
 
+> The full **[System Architecture](../architecture.html)** page has the logical architecture, 40 tool categories with alternatives and pros/cons, and the security & compliance program.
+
 | Layer | Choice (initial) |
 |---|---|
 | Frontend | Next.js/React web app + PWA; native apps in Year 2 |
@@ -554,6 +556,8 @@ Cumulative operating burn before break-even (≈ month 40): ~$20.5M.
 ---
 
 ## 18. Milestones (first 18 months)
+
+> How the platform gets built: the **[Build Roadmap](../roadmap.html)** covers 29 AI build agents over 26 weeks, with tasks, dependencies, human gates, and token, time and cost estimates.
 
 | Month | Milestone |
 |---|---|
