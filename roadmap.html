@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/ebuzz.css">
+<link rel="stylesheet" href="assets/css/ebuzz.css?v=8">
 <style>
   .page-hero { padding: 44px 0 10px; }
   .page-hero h1 { font-size: clamp(34px, 4.6vw, 52px); }
@@ -61,7 +61,7 @@
   <section class="page-hero">
     <div class="eyebrow">Build roadmap · agent-driven delivery · v1.0</div>
     <h1>How AI agents build & ship eBuzz</h1>
-    <p>A fleet of <b id="hAgents">29</b> specialised build agents writes, tests, secures and deploys the platform. A small human team supervises and approves every gate that matters: architecture, security, money, legal and production releases. It takes 26 weeks from kickoff to public launch in the wedge vertical.</p>
+    <p>A fleet of <b id="hAgents">31</b> specialised build agents writes, tests, secures and deploys the platform. A small human team supervises and approves every gate that matters: architecture, security, money, legal and production releases. It takes 26 weeks from kickoff to public launch in the wedge vertical.</p>
     <div class="kpis" id="topKpis" style="margin-top:18px"></div>
   </section>
 
@@ -129,7 +129,7 @@
 
   <section class="section" id="humans">
     <h2>Human team (supervising the agents)</h2>
-    <p class="sub">About 9 FTE over 26 weeks. A traditional team building the same scope would need roughly 35–45 engineers, designers and QA staff.</p>
+    <p class="sub">About 10.5 FTE over 26 weeks. A traditional team building the same scope would need roughly 35–45 engineers, designers and QA staff.</p>
     <div id="humanTable"></div>
   </section>
 
@@ -142,14 +142,14 @@
 <footer class="site-foot"><div class="wrap-w"><div class="row between wrap" style="gap:10px"><span>eBuzz.ai: build roadmap v1.0</span><span><a href="architecture.html">← Architecture</a> · <a href="docs.html?d=plan">Business plan</a> · <a href="https://github.com/ravikrali/ebuzz-demo">Source</a></span></div>
 <p style="margin:10px 0 0">Token, time and cost figures are planning estimates for discussion. Real usage depends on codebase size, rework, model versions and caching. Track actuals weekly and re-forecast.</p></div></footer>
 
-<script src="assets/js/ui.js"></script>
-<script src="assets/js/roadmap-data.js"></script>
+<script src="assets/js/ui.js?v=8"></script>
+<script src="assets/js/roadmap-data.js?v=8"></script>
 <script>
 (function () {
   const { $, $$, esc, money } = EB, R = window.ROADMAP;
   document.getElementById('brand').insertAdjacentHTML('afterbegin', EB.logo());
   const tb = $('#themeBtn'); tb.innerHTML = EB.icon('sun'); tb.onclick = EB.toggleTheme;
-  $('#csvBtn').textContent = '⤓ Export plan (CSV)';
+  $('#csvBtn').textContent = 'Export plan (CSV)'; $('#hAgents').textContent = R.agents.length;
   const MODEL_COLOR = { 'Opus 5': 'var(--violet)', 'Sonnet 5': 'var(--blue)', 'Haiku 4.5': 'var(--green)' };
   const byId = Object.fromEntries(R.agents.map((a) => [a.id, a]));
   const phaseName = Object.fromEntries(R.phases.map((p) => [p.id, p.name]));
@@ -215,7 +215,7 @@
     const tot = R.agents.reduce((s, a) => s + a.tokens, 0) * (1 + A.contingency / 100);
     const c = R.agents.reduce((s, a) => s + cost(a), 0), h = R.agents.reduce((s, a) => s + hours(a), 0);
     const byModel = ['Opus 5', 'Sonnet 5', 'Haiku 4.5'].map((m) => [m, R.agents.filter((a) => a.model === m)]);
-    $('#topKpis').innerHTML = EB.kpis([['Build agents', R.agents.length], ['Calendar', '26 weeks', '9 milestone gates'], ['Total tokens', fmtT(tot), `incl. ${A.contingency}% rework`], ['Est. model cost', money(c, 0), 'agent build, all phases'], ['Agent compute', Math.round(h).toLocaleString() + ' h', `${(h / 26 / 40).toFixed(1)} "FTE-equivalents"`], ['Human team', '~9 FTE', 'supervision & gates']]);
+    $('#topKpis').innerHTML = EB.kpis([['Build agents', R.agents.length], ['Calendar', '26 weeks', '9 milestone gates'], ['Total tokens', fmtT(tot), `incl. ${A.contingency}% rework`], ['Est. model cost', money(c, 0), 'agent build, all phases'], ['Agent compute', Math.round(h).toLocaleString() + ' h', `${(h / 26 / 40).toFixed(1)} "FTE-equivalents"`], ['Human team', '~10.5 FTE', 'supervision & gates']]);
     $('#totals').innerHTML = EB.table(['Model', 'Agents', 'Tokens', 'Blended $/M', 'Cost'], [...byModel.map(([m, list]) => [`<b style="color:${MODEL_COLOR[m]}">${m}</b>`, list.length, fmtT(list.reduce((s, a) => s + a.tokens, 0) * (1 + A.contingency / 100)), money(rate(m)), money(list.reduce((s, a) => s + cost(a), 0), 0)]), { hl: true, cells: ['<b>Total</b>', R.agents.length, `<b>${fmtT(tot)}</b>`, money(c / tot), `<b>${money(c, 0)}</b>`] }], { right: [1, 2, 3, 4] });
     const ph = R.phases.map((p) => [p, R.agents.filter((a) => a.phase === p.id).reduce((s, a) => s + a.tokens * (1 + A.contingency / 100), 0)]);
     const mx = Math.max(...ph.map((x) => x[1]));

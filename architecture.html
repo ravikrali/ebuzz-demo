@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/ebuzz.css">
+<link rel="stylesheet" href="assets/css/ebuzz.css?v=8">
 <style>
   .page-hero { padding: 44px 0 10px; }
   .page-hero h1 { font-size: clamp(34px, 4.6vw, 52px); }
@@ -56,8 +56,8 @@
     <p>A local-first, agent-native marketplace on AWS. It has chat-first clients, a real-time Deal Room, an event-driven core, and a governed AI agent platform. Security and compliance are designed in from the start: personal data stays encrypted on users' devices, and people approve anything that moves money, publishes content or signs contracts.</p>
     <div class="kpis" style="margin-top:18px">
       <div class="kpi"><div class="l">Client portals</div><div class="v">5 + mobile</div></div>
-      <div class="kpi"><div class="l">Domain services</div><div class="v">12</div></div>
-      <div class="kpi"><div class="l">Operational AI agents</div><div class="v">24</div></div>
+      <div class="kpi"><div class="l">Domain services</div><div class="v">14</div></div>
+      <div class="kpi"><div class="l">Operational AI agents</div><div class="v">26</div></div>
       <div class="kpi"><div class="l">Tool categories compared</div><div class="v" id="nTools">-</div></div>
       <div class="kpi"><div class="l">PCI scope</div><div class="v">SAQ-A</div></div>
     </div>
@@ -146,8 +146,8 @@
 <footer class="site-foot"><div class="wrap-w"><div class="row between wrap" style="gap:10px"><span>eBuzz.ai: architecture v1.0</span><span><a href="roadmap.html">Build roadmap →</a> · <a href="docs.html?d=plan">Business plan</a> · <a href="https://github.com/ravikrali/ebuzz-demo">Source</a></span></div>
 <p style="margin:10px 0 0">Vendor names are suggestions based on public information as of September 2026. Validate pricing, contracts and certifications during procurement.</p></div></footer>
 
-<script src="assets/js/ui.js"></script>
-<script src="assets/js/arch-data.js"></script>
+<script src="assets/js/ui.js?v=8"></script>
+<script src="assets/js/arch-data.js?v=8"></script>
 <script>
 (function () {
   const { $, $$, esc } = EB, A = window.ARCH;
@@ -169,7 +169,7 @@
   const arrow = (x, y1, y2) => { s += `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" stroke="var(--muted)" stroke-width="1.6" marker-end="url(#ah)"/>`; };
 
   band(10, 118, 'CLIENTS & CHANNELS', 'var(--surface-2)');
-  row(32, 44, [['Shopper web/PWA', 'Concierge · Play · Wallet'], ['iOS / Android', 'React Native'], ['Deal Room', 'vendor managers'], ['Supplier Hub', 'ops · catalog · team'], ['Admin Console', 'finance · limits · RBAC'], ['Agent Ops', 'approvals · fleet'], ['External AI agents', 'UCP / ACP']], 'b');
+  row(32, 44, [['Shopper web/PWA', 'Concierge · Feed · Play'], ['iOS / Android', 'React Native'], ['Deal Room', 'offers · feed promos'], ['Supplier Hub', 'ops · catalog · team'], ['Admin Console', 'feed & ads · RBAC'], ['Agent Ops', 'approvals · fleet'], ['External AI agents', 'UCP / ACP']], 'b');
   row(84, 34, [['On-device SQLite', ''], ['Sync client + outbox', ''], ['E2EE vault (AES-GCM)', ''], ['Device-only memory', ''], ['Chat UI component kit', '']], 'g');
   arrow(W / 2 - 40, 128, 146);
   band(146, 70, 'EDGE & ACCESS', 'var(--surface-2)');
@@ -181,7 +181,7 @@
   row(262, 40, [['Conversation', 'Concierge sessions'], ['Catalog & Search', 'hybrid + vector'], ['Deal Room', 'offer engine']], 'a', sx0, sx1);
   row(310, 40, [['Cart · Checkout · Orders', ''], ['Wallet & Ledger', 'double-entry'], ['Games & Prize governor', 'win limits']], 'a', sx0, sx1);
   row(358, 40, [['Vendors & Contracts', 'KYB · e-sign'], ['Payouts & Finance', 'recon · tax'], ['Sync service', 'rules · change feed']], 'a', sx0, sx1);
-  row(406, 28, [['Notifications', ''], ['Content CMS', ''], ['Reviews & Trust', '']], 'b', sx0, sx1);
+  row(406, 28, [['Buzz Feed & UGC', ''], ['Moderation', ''], ['Ads & Sponsored', ''], ['Notify · CMS', '']], 'b', sx0, sx1);
   const ax = 70 + (W - 210) * 0.6 + 12, aw = (W - 210) * 0.4 - 12;
   s += `<rect x="${ax}" y="234" width="${aw}" height="208" rx="14" fill="var(--violet-soft)" stroke="var(--line)"/><text x="${ax + 14}" y="252" font-size="11" font-weight="700" letter-spacing=".08em" fill="var(--violet-ink)">AGENT PLATFORM</text>`;
   row(262, 40, [['Orchestrator', 'Temporal workflows'], ['Agent runtime', 'Claude Agent SDK']], 'b', ax + 14, ax + aw - 14);
@@ -193,7 +193,7 @@
   row(480, 40, [['PostgreSQL', 'Aurora · RLS'], ['Event bus', 'Kafka'], ['Cache', 'Valkey/Redis'], ['Search + vectors', 'OpenSearch · pgvector'], ['Object storage', 'S3 (media, docs)'], ['Warehouse', 'Snowflake (pseudonymous)'], ['KMS · Secrets', '']], 'b');
   arrow(W / 2 - 40, 530, 548);
   band(548, 70, 'EXTERNAL SERVICES', 'var(--surface-2)');
-  row(568, 40, [['Stripe Connect', 'pay · KYC · payouts'], ['Stripe Tax', ''], ['EasyPost', 'shipping'], ['Dropbox Sign', 'contracts'], ['Ads', 'GAM · AdMob · MAX'], ['YouTube · CMS', 'content'], ['Postmark · Twilio', ''], ['Licensed trend data', '']], 'b');
+  row(568, 40, [['Stripe Connect', 'pay · KYC · payouts'], ['Stripe Tax', ''], ['EasyPost', 'shipping'], ['Dropbox Sign', 'contracts'], ['Ad networks', 'Google · Microsoft · MAX'], ['Social apps', 'TikTok · IG · FB · X'], ['Postmark · Twilio', ''], ['Licensed trend data', '']], 'b');
   // cross-cutting planes
   s += `<rect x="${W - 130}" y="10" width="120" height="608" rx="14" fill="var(--red-soft)" stroke="var(--line)"/>`;
   s += `<text x="${W - 70}" y="30" text-anchor="middle" font-size="11" font-weight="700" fill="var(--red)">SECURITY &amp;</text><text x="${W - 70}" y="44" text-anchor="middle" font-size="11" font-weight="700" fill="var(--red)">COMPLIANCE</text>`;

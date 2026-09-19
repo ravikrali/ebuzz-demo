@@ -30,14 +30,16 @@
     adm_staff: { cols: ['id', 'name', 'email', 'role', 'territory', 'status', 'added_at'], central: ['id', 'role', 'territory', 'status', 'added_at'], why: 'Role and territory scope are enforced centrally.' },
     adm_roles: { cols: ['id', 'name', 'perms_json'], central: ['id', 'name', 'perms_json'], why: 'Permissions are enforced server-side.' },
     config: { cols: ['id', 'json', 'updated_at'], central: ['id', 'json', 'updated_at'], why: 'Platform settings, e.g. win limits.' },
+    // Buzz Feed (public by design: shown under a display name, never contact details)
+    feed_posts: { cols: ['id', 'author_id', 'author', 'avatar', 'kind', 'text', 'rating', 'product', 'sku', 'vendor', 'emoji', 'promo_price', 'list_price', 'cta', 'sponsored', 'status', 'likes', 'shares', 'comments_json', 'mod_score', 'mod_flags', 'impressions', 'clicks', 'targets', 'incentivized', 'verified', 'created_at'], central: ['id', 'author_id', 'author', 'avatar', 'kind', 'text', 'rating', 'product', 'sku', 'vendor', 'emoji', 'promo_price', 'list_price', 'cta', 'sponsored', 'status', 'likes', 'shares', 'comments_json', 'mod_score', 'mod_flags', 'impressions', 'clicks', 'targets', 'incentivized', 'verified', 'created_at'], why: 'Public posts, shown under the display name the author chooses. No email, address or order details are included; "verified purchase" is a yes/no flag.' },
     plat_tx: { cols: ['id', 'date', 'type', 'party', 'ref', 'amount', 'fee', 'status', 'region'], central: ['id', 'date', 'type', 'party', 'ref', 'amount', 'fee', 'status', 'region'], why: 'Platform ledger. Parties are pseudonymous IDs.' },
   };
   // which tables each portal keeps on-device, and which central records it may read
   const SCOPES = {
-    customer: { key: 'acct:maya', tables: ['profile', 'prefs', 'orders', 'wallet_tx', 'cart', 'memory', 'config'], readOnly: ['config'], filter: (r) => r.table === 'config' || r.owner === 'acct:maya' },
+    customer: { key: 'acct:maya', tables: ['profile', 'prefs', 'orders', 'wallet_tx', 'cart', 'memory', 'config', 'feed_posts'], readOnly: ['config'], filter: (r) => r.table === 'config' || r.table === 'feed_posts' || r.owner === 'acct:maya' },
     supplier: { key: 'org:sitwell', tables: ['sup_staff', 'sup_roles', 'sup_tx', 'orders'], readOnly: ['orders'], filter: (r) => (r.table === 'orders' ? r.data.vendor === 'Sitwell Home' : r.owner === 'org:sitwell') },
-    admin: { key: 'org:ebuzz', tables: ['adm_staff', 'adm_roles', 'config', 'plat_tx', 'orders', 'wallet_tx'], readOnly: ['orders', 'wallet_tx'], filter: (r) => ['orders', 'wallet_tx'].includes(r.table) || r.owner === 'org:ebuzz' },
-    vendor: { key: 'org:ergomax', tables: [], readOnly: [], filter: () => false },
+    admin: { key: 'org:ebuzz', tables: ['adm_staff', 'adm_roles', 'config', 'plat_tx', 'orders', 'wallet_tx', 'feed_posts'], readOnly: ['orders', 'wallet_tx'], filter: (r) => ['orders', 'wallet_tx', 'feed_posts'].includes(r.table) || r.owner === 'org:ebuzz' },
+    vendor: { key: 'org:ergomax', tables: ['feed_posts', 'config'], readOnly: ['config'], filter: (r) => r.table === 'feed_posts' || r.table === 'config' },
     agents: { key: 'org:ebuzz', tables: ['config'], readOnly: ['config'], filter: (r) => r.table === 'config' },
   };
 
@@ -108,7 +110,8 @@
 
   function persist() { if (!SQLdb || !localIdb) return; clearTimeout(saveT); saveT = setTimeout(() => tx(localIdb, 'files', 'readwrite', (s) => s.put(SQLdb.export(), keyName)), 250); }
   const rowObj = (cols, vals) => Object.fromEntries(cols.map((c, i) => [c, vals[i]]));
-  const cast = (t, r) => { const o = {}; SCHEMA[t].cols.forEach((c) => { const v = r[c]; o[c] = v !== null && v !== undefined && v !== '' && !isNaN(v) && /price|total|tax|credit|amount|gross|fees|net|fee|qty|offer|_updated/.test(c) ? +v : v ?? null; }); return o; };
+  const NUMERIC = new Set(['price', 'list_price', 'promo_price', 'total', 'tax', 'credit', 'amount', 'gross', 'fees', 'net', 'fee', 'qty', 'offer', 'rating', 'likes', 'shares', 'mod_score', 'impressions', 'clicks', 'sponsored', 'incentivized', 'verified', '_updated']);
+  const cast = (t, r) => { const o = {}; SCHEMA[t].cols.forEach((c) => { const v = r[c]; o[c] = v !== null && v !== undefined && v !== '' && !isNaN(v) && NUMERIC.has(c) ? +v : v ?? null; }); return o; };
 
   function upsertLocal(t, row, updated, origin) {
     if (SQLdb) {

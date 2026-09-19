@@ -466,3 +466,33 @@ table.t th.sort:hover { color: var(--ink); }
 @media (max-width: 720px) { .m-theme { display: grid; } }
 .grid2 > *, .grid3 > *, .grid4 > * { min-width: 0; }
 .field input, .field select, .field textarea { min-width: 0; width: 100%; }
+
+/* ---------- Buzz Feed ---------- */
+.feed-wrap { max-width: 700px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+.post { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; }
+.post.promo { border-color: color-mix(in srgb, var(--honey) 55%, var(--line)); }
+.post.dim { opacity: .72; border-style: dashed; }
+.post-av { width: 40px; height: 40px; border-radius: 50%; background: var(--surface-2); display: grid; place-items: center; font-size: 20px; flex: none; }
+.post-text { margin: 8px 0 0; font-size: 14.5px; line-height: 1.55; white-space: pre-wrap; }
+.post-prod { display: flex; gap: 10px; align-items: center; margin-top: 10px; padding: 8px; border-radius: 12px; background: var(--surface-2); }
+.post-art { width: 46px; height: 46px; border-radius: 10px; display: grid; place-items: center; font-size: 24px; background: linear-gradient(135deg, var(--accent-soft), var(--surface)); flex: none; }
+.post-actions { display: flex; gap: 4px; margin-top: 10px; border-top: 1px solid var(--line); padding-top: 8px; flex-wrap: wrap; }
+.post-actions button { border: 0; background: transparent; border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.post-actions button:hover { background: var(--surface-2); color: var(--ink); }
+.post-actions button.on { color: var(--red); }
+.post-comments { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+.post-comments .cm { font-size: 13.5px; background: var(--surface-2); padding: 7px 10px; border-radius: 10px; }
+.ad-slot { border: 1px dashed var(--line); border-radius: 16px; padding: 12px 16px; background: var(--surface); }
+.ad-art { width: 64px; height: 64px; border-radius: 12px; display: grid; place-items: center; font-size: 32px; background: linear-gradient(135deg, var(--blue-soft), var(--surface-2)); flex: none; }
+.ad-why { border: 0; background: transparent; color: var(--muted); font-size: 14px; }
+.share-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+.share-grid button { border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 12px 6px; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; }
+.share-grid button:hover { border-color: var(--accent); }
+.sh { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 17px; }
+.sh.tt { background: #111; } .sh.ig { background: linear-gradient(45deg, #F58529, #DD2A7B, #8134AF); } .sh.fb { background: #1877F2; } .sh.xx { background: #000; } .sh.cp { background: var(--muted); }
+.composer-card textarea { width: 100%; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: var(--surface); resize: vertical; min-height: 70px; }
+.composer-card textarea:focus { outline: 2px solid var(--accent); border-color: transparent; }
+.star-in button { border: 0; background: transparent; font-size: 22px; color: var(--surface-3); padding: 0 1px; }
+.star-in button.on { color: var(--honey-strong); }
+.post.hl { box-shadow: 0 0 0 3px var(--accent); }
+.post-comments[hidden] { display: none; }

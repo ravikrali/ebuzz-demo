@@ -10,13 +10,15 @@
 
 Between purchases, shoppers play **short skill games** (match-3, memory, quick quizzes) in the **Play & Win** zone. Banner and rewarded ads pay for the games, and shoppers win **small store credits** that they can spend on eBuzz.
 
+The **Buzz Feed** is a social feed that appears in the Shopper, Vendor and Admin portals. Shoppers post reviews, ratings, stories, tips and questions, and share them to TikTok, Instagram, Facebook, X or by link. Vendors reply as their brand and run labelled **Sponsored promotions**. **Banner ads** from Google Ad Manager and Microsoft Advertising (contextual only) are placed between posts. The feed brings free traffic through shares, adds trusted verified-purchase reviews, and creates new ad inventory.
+
 Behind the scenes, eBuzz is an **AI-first company**. A fleet of agents finds trending problems, researches products, writes Top10 guides, produces 60–90 second videos (published only after human approval), recruits vendors, and runs every operational process from search-to-order to regulatory monitoring.
 
 | | |
 |---|---|
 | **Customers** | Shoppers aged 25–55 in the US with a specific need, starting in *Home, Sleep & Work-from-Home Wellness* |
 | **Suppliers / vendors** | Brands, DTC sellers, distributors (Shopify, Amazon 3P and wholesale sellers) |
-| **Revenue** | Transaction commission (core), ad revenue (games + sponsored), Deal Boost fees, vendor SaaS tiers, affiliate |
+| **Revenue** | Transaction commission (core), advertising (Play zone + Buzz Feed banners via Google/Microsoft), retail media (Deal Boost + Sponsored feed promotions), vendor SaaS tiers, affiliate |
 | **Year-5 target (estimate)** | ~$1.0B GMV, ~$220M revenue, ~27% EBITDA margin |
 | **Funding ask** | $4.0M seed, 18-month runway to Series A milestones |
 
@@ -36,6 +38,7 @@ Behind the scenes, eBuzz is an **AI-first company**. A fleet of agents finds tre
 | Live Deal Room (vendor offers + ask-for-discount) | Very high | **High** (data + vendor workflow) | Medium (antitrust, race to the bottom) | **Core differentiator.** Invest most here |
 | Ad-funded games & credits | Medium–high | Low–medium | Medium–high (sweepstakes law, dark-pattern regulation) | **Keep with guardrails** |
 | Context-only browsing | High (less clutter) | Medium | Low | **Keep.** Clear UX positioning |
+| Buzz Feed (UGC + sponsored + banners) | High (trusted reviews, stories) | Medium (verified-purchase review graph) | Medium (fake reviews, moderation cost, ad clutter) | **Add, with strict moderation and ad caps** |
 | AI content engine (Top10, video) | Medium | Medium | Medium (search/YouTube policy) | **Keep with human quality gates** |
 | Agentic operations | Indirect | Medium | Medium (errors at scale) | **Keep.** Structural cost advantage |
 | Commission + ads revenue | – | – | Low | **Add Deal Boost, SaaS and data products** |
@@ -143,6 +146,24 @@ Each portal has its own accent colour (Shopper honey, Deal Room violet, Supplier
 - Access is **enforced server-side on every request**. AI agents act only within the permissions of the person or process that started them.
 - Staff names and emails live in the organisation's encrypted vault. Only role, scope and status are stored centrally in plaintext.
 
+### 4.7 Buzz Feed (social)
+
+A single feed appears in three portals, with different tools in each:
+
+| Portal | What people do in the feed |
+|---|---|
+| **Shopper** | Post reviews (1–5 stars, linked to a purchase for a **Verified purchase** badge), stories, tips and questions with photos. Like, comment and report. **Share** to TikTok and Instagram (caption + link copied, or a 9:16 story image made on the device), Facebook, X, the native share sheet, or copy link. "Get offer" on a Sponsored post applies the promo price in the cart. |
+| **Vendor (Deal Room)** | See mentions of the brand and the average rating, **reply as the brand** (replies are labelled; vendors can't edit or remove reviews), and build **Sponsored promotions** (product, promo price checked against the floor, message, target problems, daily budget). Promotions go live only after eBuzz ad review. |
+| **Admin** | **Moderation queue** (AI-flagged or reported posts: approve, add a disclosure label, remove), **promotion ad review**, **banner ad settings** (Google Ad Manager / Microsoft Advertising / direct-sold toggles, banner every N posts, per-session cap, blocked categories, contextual-only targeting locked on), plus feed KPIs and ad revenue. |
+
+**Rules that keep the feed trustworthy**
+- A post is labelled *Verified purchase* only if it's linked to a real order, and *Received product free* when the author ticks the incentive box (FTC).
+- The AI moderator pre-screens every post (spam, off-platform selling, harassment, undisclosed incentives, personal data). Risky posts wait for a human (target: under 2 hours).
+- Sponsored posts are always labelled. Banner ads say "Ad · network" and explain "Why this ad?". No personal data goes to ad networks; ads load only after consent.
+- Posts are public by design under a display name. Contact details and order data are never included (see 12.1).
+
+**Why it matters:** shopper shares bring low-cost visitors, verified reviews make recommendations more trustworthy, vendors get another paid placement, and banner ads add inventory beyond the Play zone.
+
 ---
 
 ## 5. Market analysis
@@ -213,8 +234,8 @@ Agentic commerce is projected (McKinsey) to reach **$3–5T** in annual revenue 
 | Stream | Mechanism | Pricing (launch) | Share of revenue in Y5 (est.) |
 |---|---|---|---|
 | **Transaction commission** | % of GMV on every sale | 8–15% by category (blended ~11–12%) | ~55% |
-| **Retail media: Deal Boost & sponsored offers** | Vendors pay to highlight an offer or appear in "Also consider" | CPC / fixed boost fee; always labelled | ~18% |
-| **Play-zone advertising** | Rewarded video, banners, brand-sponsored levels | CPM (tier-1 rewarded ~$16–20) | ~16% |
+| **Retail media: Deal Boost, sponsored offers & Sponsored feed promotions** | Vendors pay to highlight an offer, appear in "Also consider", or promote a post in the Buzz Feed | CPC / CPM with daily budgets; always labelled "Sponsored" | ~18% |
+| **Display advertising (Play zone + Buzz Feed)** | Rewarded video, brand-sponsored levels, and feed banners from Google Ad Manager & Microsoft Advertising (Prebid header bidding), contextual only | CPM (tier-1 rewarded ~$16–20; feed display lower) | ~16% |
 | **Vendor SaaS** | Deal Room Pro (auto-bid, analytics, Problem Radar) | Free · Pro $149/mo · Enterprise $999/mo | ~8% |
 | **Affiliate** | Top10 content linking to products we don't stock | 3–15% of partner sales | ~2% |
 | **Future: eBuzz+ membership** | Free shipping, extra game lives, priority deals | $4.99/mo (Year 3+) | – |
@@ -263,6 +284,7 @@ Agentic commerce is projected (McKinsey) to reach **$3–5T** in annual revenue 
 - **Owned content (lowest CAC):** Top10 guide pages per problem cluster, 60–90 second "problem → solution" videos on YouTube Shorts, TikTok and Instagram Reels. All human-approved.
 - **Community:** Reddit/Discord presence around problem communities (sleep, WFH, pets). Genuine and disclosed, never astroturfing.
 - **Referral:** "Give $5, get $5" plus bonus game lives.
+- **Social sharing loop:** every Buzz Feed post can be shared to TikTok, Instagram, Facebook and X with a link back to eBuzz. Story images and Open Graph previews make the shares look good. Target: 8% of posts shared, and 10% of new visitors arriving from shares by month 12.
 - **Paid:** Search ads on problem queries ("best chair for lower back pain"), creator partnerships.
 - **Partnerships:** Employer wellness programmes (WFH stipends), credit-card-linked offers.
 
@@ -321,9 +343,11 @@ Agentic commerce is projected (McKinsey) to reach **$3–5T** in annual revenue 
 | | **Financial (FP&A)** | Daily P&L, forecasting, prize-pool governance | CFO review |
 | | **Tax** | Marketplace-facilitator sales tax, 1099-K reporting | Accountant sign-off |
 | **Risk** | **Fraud & Trust** | Payment fraud, promo abuse, fake reviews, seller verification | High-risk cases |
+| | **Feed Moderation** | Pre-screens every Buzz Feed post and vendor promotion (spam, harassment, undisclosed incentives, PII, illegal content) | Posts above the risk threshold; removals of verified reviews |
 | | **Legal** | Policies, terms, takedown handling, contract review | General counsel |
 | | **Regulatory Watch** | Tracks FTC, state AG, EU DFA/DSA, sweepstakes, AI-disclosure rules; opens compliance tickets | Compliance lead |
 | **Growth** | **Game Economy** | Balances prize pool vs. ad revenue; detects bots | Weekly |
+| | **Social Distribution** | Creates share cards and Open Graph previews; reposts top shopper content to eBuzz social accounts **only with the author's consent** | Consent required |
 | | **Ad Ops** | Ad inventory, brand-sponsored levels, labelling | – |
 | | **Vendor Success** | Coaches vendors on offers, catalog, performance | – |
 
@@ -348,6 +372,7 @@ Agentic commerce is projected (McKinsey) to reach **$3–5T** in annual revenue 
 | Returns | CX + Vendor | Returns & Refunds | Refund ≤ 3 days after return scan |
 | Payouts | Finance | Order-to-Cash | Weekly, T+7 after delivery |
 | Content | Editor | Top10, Video, Publisher | 20 videos/week at launch |
+| Buzz Feed moderation & ad review | Trust & Safety | Feed Moderation | Flagged posts < 2 h; promotions < 1 h |
 | Compliance | Compliance Lead | Regulatory Watch, Legal | Monthly review |
 
 **Fulfilment model:** marketplace with vendors shipping directly (no inventory risk). eBuzz sets the shipping and returns rules and scores vendors (on-time rate, defect rate, response time).
@@ -422,6 +447,8 @@ The prototype implements this model: each portal opens a real SQLite database in
 | **Consumer protection** | FTC Act §5 (unfair/deceptive practices), FTC rules on fake reviews and endorsements, "click-to-cancel" style subscription rules | Labelled sponsorship, review integrity, easy cancellation |
 | **Personalised pricing** | State algorithmic-pricing disclosure laws (e.g. New York) | Label: "This offer was set for you in a live session." |
 | **Antitrust** | Sherman Act §1 (no facilitating collusion) | Session-scoped, anonymised "price to beat"; no aggregated competitor feeds; counsel review |
+| **Reviews & UGC** | FTC Consumer Reviews & Testimonials Rule (16 CFR 465), Consumer Review Fairness Act, Endorsement Guides, Section 230, DMCA, TAKE IT DOWN Act | Verified-purchase flags, incentive disclosures, no review gating or suppression, vendors can't remove reviews, DMCA agent, NCII removal within 48 h |
+| **Advertising** | Ad-network publisher policies (Google, Microsoft), FTC ad disclosures, state privacy laws (targeted ads opt-out, GPC) | "Ad"/"Sponsored" labels, contextual-only targeting, consent before ad scripts, ads.txt |
 | **Games / promotions** | State sweepstakes/lottery laws; "no purchase necessary"; skill vs. chance | Skill-based, free alternative entry, official rules, published odds, 18+, excluded states where needed |
 | **Privacy** | CCPA/CPRA and state privacy laws; GDPR (international) | Local-first storage with an E2EE vault for PII (section 12.1), consent management, data minimisation, deletion rights |
 | **AI** | AI-content disclosure (YouTube synthetic-media labels), EU AI Act transparency (international), chatbot disclosure laws | "You're chatting with an AI" label; AI video labels |
@@ -478,8 +505,8 @@ Marketplace economist (auction design), antitrust counsel, promotions/sweepstake
 | | Y1 | Y2 | Y3 | Y4 | Y5 |
 |---|---|---|---|---|---|
 | Commission revenue | 0.47 | 3.96 | 18.86 | 55.44 | 122.40 |
-| Retail media (Deal Boost, sponsored) | 0.05 | 0.72 | 4.92 | 16.17 | 40.80 |
-| Play-zone ad revenue | 0.11 | 1.06 | 4.80 | 14.90 | 36.00 |
+| Retail media (Deal Boost, sponsored offers & feed promotions) | 0.05 | 0.72 | 4.92 | 16.17 | 40.80 |
+| Display advertising (Play zone + Buzz Feed) | 0.11 | 1.06 | 4.80 | 14.90 | 36.00 |
 | Vendor SaaS | 0.08 | 0.80 | 3.13 | 8.58 | 17.88 |
 | Affiliate | 0.15 | 0.60 | 1.50 | 2.50 | 3.50 |
 | **Total revenue** | **0.86** | **7.14** | **33.21** | **97.59** | **220.58** |
@@ -496,6 +523,8 @@ Marketplace economist (auction design), antitrust counsel, promotions/sweepstake
 | *EBITDA margin* | – | – | – | *15%* | *27%* |
 
 *Take rate on GMV (all revenue ÷ GMV): Y1 18%, Y2 20%, Y3 20%, Y4 21%, Y5 22%.*
+
+*The Buzz Feed adds ad inventory (feed banners, Sponsored posts) and lowers acquisition cost through shares. The projections above do **not** yet include any upside from it; they will be revised once beta engagement data is in. Moderation cost (about $0.002 per post screened plus human review) sits in "CX, returns, fraud losses".*
 
 ### 15.3 Funding plan
 
@@ -527,6 +556,8 @@ Cumulative operating burn before break-even (≈ month 40): ~$20.5M.
 | Deal Room | Conversion lift vs. control | ≥ 25% |
 | Deal Room | Avg discount given | ≤ 8% of item price |
 | Engagement | D30 retention (buyers) | ≥ 25% |
+| Buzz Feed | Posts per 100 buyers / share rate / flagged-post review time | ≥ 15 / ≥ 8% / < 2 h |
+| Ads | Feed banner viewability / ad complaints per 10k sessions | ≥ 60% / < 1 |
 | Games | Prize pool / Play ad revenue | ≤ 40% |
 | Supply | Active vendors / fill rate for top problems | 300 / ≥ 85% |
 | Quality | On-time delivery / return rate | ≥ 95% / ≤ 8% |
@@ -550,6 +581,8 @@ Cumulative operating burn before break-even (≈ month 40): ~$20.5M.
 | Content penalties (search, YouTube) | Medium | Medium | Human approval, real testing, volume caps, disclosures |
 | Data sourcing / scraping lawsuits | Medium | High | Licensed data only; respect ToS; no login scraping |
 | Fraud & promo abuse (multi-accounting for credits) | High | Medium | Device fingerprinting, KYC for payouts, credit caps |
+| Fake or incentivised reviews, harmful UGC in the Buzz Feed | High | High | Verified-purchase flags, AI + human moderation, disclosure labels, repeat-offender bans, FTC-compliant policies |
+| Ads clutter the chat-first experience or leak data | Medium | Medium | Ads only in Feed & Play, capped frequency, contextual-only targeting, admin controls |
 | Payment / chargeback losses | Low | Medium | Stripe Radar, vendor reserves |
 | Key-person risk | Medium | Medium | Documentation; agents encode processes |
 

@@ -11,13 +11,14 @@
       { id: 'overview', label: 'Copilot', icon: 'chat' },
       { id: 'payouts', label: 'Payouts', icon: 'send', badge: 1 },
       { id: 'limits', label: 'Win limits', icon: 'trophy' },
+      { id: 'feed', label: 'Feed & Ads', icon: 'feed', badge: 3 },
       { id: 'recon', label: 'Reconcile', icon: 'check', badge: 3 },
       { id: 'staff', label: 'Staff & access', icon: 'users' },
       { id: 'forecast', label: 'Forecast', icon: 'target' },
     ],
     placeholder: 'Ask Admin Copilot, e.g. "change win limits" or "add a territory manager"',
     note: 'Money movement is handled by deterministic code with human approval. The AI explains, drafts and flags.',
-    onNav: (id) => (id === 'board' ? board() : id === 'limits' ? winLimits() : id === 'staff' ? staffView() : (EB.view('chat'), chat.user(LABELS[id]), W[id]())),
+    onNav: (id) => (id === 'board' ? board() : id === 'feed' ? feedAdmin() : id === 'limits' ? winLimits() : id === 'staff' ? staffView() : (EB.view('chat'), chat.user(LABELS[id]), W[id]())),
   });
   EB.setNav('overview');
   const LABELS = { overview: 'Month-to-date overview', revenue: 'Break down revenue', payouts: 'Show this week\'s payout batch', prizes: 'How is the game prize pool?', recon: 'Any reconciliation exceptions?', tax: 'Sales tax status', forecast: 'Update the forecast' };
@@ -145,7 +146,8 @@
   ];
   async function seed(tables) {
     const r = D.rng(99), pick = (a) => a[Math.floor(r() * a.length)];
-    if (tables.includes('config')) await D.put('config', { id: 'win_limits', json: JSON.stringify(LIMIT_DEFAULTS), updated_at: new Date().toISOString() }, { silent: true });
+    if (tables.includes('config')) await D.put('config', [{ id: 'win_limits', json: JSON.stringify(LIMIT_DEFAULTS), updated_at: new Date().toISOString() }, { id: 'feed_ads', json: JSON.stringify(EB.feed.AD_DEFAULTS), updated_at: new Date().toISOString() }], { silent: true });
+    if (tables.includes('feed_posts')) await EB.feed.seed();
     if (tables.includes('adm_roles')) await D.put('adm_roles', ROLE_SEED.map(([name, perms], i) => ({ id: 'arole-' + i, name, perms_json: JSON.stringify(perms) })), { silent: true });
     if (tables.includes('adm_staff')) await D.put('adm_staff', [
       ['Alex Morgan', 'alex@ebuzz.example', 'Super Admin', ''], ['Jamie Chen', 'jamie@ebuzz.example', 'Finance Manager', ''],
@@ -164,8 +166,10 @@
       for (let w = 1; w <= 17; w++) VEND.forEach((v, j) => { if (r() < 0.6) rows.push({ id: `PT-P${w}-${j}`, date: D.daysAgo(w * 7 - 2), type: 'Vendor payout', party: v, ref: 'PB-' + (900 + w), amount: -Math.round(200 + r() * 1500), fee: 0, status: 'Paid', region: pick(TERRITORIES.slice(0, 4)) }); });
       for (let d = 0; d < 120; d += 1) { if (d % 3) continue; rows.push({ id: 'PT-A' + d, date: D.daysAgo(d), type: 'Ad revenue', party: pick(['AdMob', 'AppLovin', 'Brand: Hushly', 'Brand: Sitwell']), ref: 'AD-' + d, amount: 0, fee: Math.round(40 + r() * 60), status: 'Accrued', region: 'All' }); }
       for (let i = 0; i < 90; i++) { const a = pick([0.1, 0.25, 0.5, 1]); rows.push({ id: 'PT-G' + i, date: D.daysAgo(Math.floor(r() * 120)), type: 'Game prize', party: user(), ref: 'GP-' + i, amount: -a, fee: -a, status: 'Credited', region: pick(TERRITORIES.slice(0, 4)) }); }
+      for (let d = 0; d < 120; d += 2) rows.push({ id: 'PT-F' + d, date: D.daysAgo(d), type: 'Feed ads', party: pick(['Google Ad Manager', 'Microsoft Advertising']), ref: 'FA-' + d, amount: 0, fee: Math.round(30 + r() * 50), status: 'Accrued', region: 'All' });
+      for (let d = 0; d < 120; d += 3) rows.push({ id: 'PT-SP' + d, date: D.daysAgo(d), type: 'Sponsored posts', party: pick(VEND), ref: 'SP-' + d, amount: 0, fee: Math.round(40 + r() * 120), status: 'Invoiced', region: 'All' });
       for (let m = 0; m < 4; m++) VEND.forEach((v, j) => rows.push({ id: `PT-S${m}-${j}`, date: D.daysAgo(m * 30 + 2), type: 'Vendor SaaS', party: v, ref: 'INV-' + m + j, amount: 0, fee: j % 3 ? 49 : 149, status: 'Paid', region: 'All' }));
-      rows.forEach((x) => { if (x.type === 'Ad revenue' || x.type === 'Vendor SaaS') x.amount = x.fee; });
+      rows.forEach((x) => { if (['Ad revenue', 'Vendor SaaS', 'Feed ads', 'Sponsored posts'].includes(x.type)) x.amount = x.fee; });
       await D.put('plat_tx', rows, { silent: true });
     }
   }
@@ -203,6 +207,56 @@
     ] });
     $('[data-t]', v).append(t);
     $('[data-sync]', v).onclick = () => EB.syncView();
+  }
+
+  /* ---------------- Feed & Ads: moderation, promotion review, ad networks ---------------- */
+  let ft = 'Queue';
+  function feedAdmin() {
+    const all = EB.feed.list(), cfg = EB.feed.adConfig();
+    const queue = all.filter((p) => p.status === 'flagged'), pending = all.filter((p) => p.status === 'pending');
+    const wk = all.filter((p) => p.created_at >= new Date(Date.now() - 7 * 864e5).toISOString());
+    const adRev = D.all('plat_tx').filter((x) => x.type === 'Feed ads' && x.date >= D.daysAgo(30)).reduce((a, x) => a + x.fee, 0);
+    const spRev = D.all('plat_tx').filter((x) => x.type === 'Sponsored posts' && x.date >= D.daysAgo(30)).reduce((a, x) => a + x.fee, 0);
+    const badge = $('[data-nav=feed] .badge'); if (badge) { badge.textContent = queue.length + pending.length; badge.style.display = queue.length + pending.length ? '' : 'none'; }
+    const v = EB.view('feed', `
+      <div class="row between wrap" style="gap:10px;margin-bottom:14px"><div><h1 style="font-size:28px">Buzz Feed · Trust & Ads</h1><div class="muted">Moderate shopper posts, review vendor promotions before they go live, and control banner ad networks. The same feed appears in the Shopper and Vendor portals.</div></div></div>
+      ${EB.kpis([['Posts (7d)', wk.length], ['Held for review', queue.length, 'AI-flagged or reported', queue.length ? 'down' : ''], ['Promotions pending', pending.length], ['Shares (all)', all.reduce((a, p) => a + (+p.shares || 0), 0).toLocaleString()], ['Banner ad revenue (30d)', money(adRev, 0)], ['Sponsored posts (30d)', money(spRev, 0)]])}
+      <div class="chips" style="margin:14px 0" data-tabs>${[['Queue', queue.length], ['Promotion review', pending.length], ['All posts', all.length], ['Ad settings', '']].map(([t, n]) => `<button class="chip ${t === ft ? 'on' : ''}" data-t="${t}">${t} ${n !== '' ? `<span class="muted">${n}</span>` : ''}</button>`).join('')}</div>
+      <div data-body></div>`);
+    $$('[data-t]', v).forEach((b) => (b.onclick = () => { ft = b.dataset.t; feedAdmin(); }));
+    const body = $('[data-body]', v);
+    const act = async (p, patch, msg) => { await D.put('feed_posts', { ...p, ...patch }); EB.toast(msg); feedAdmin(); };
+    if (ft === 'Ad settings') {
+      body.innerHTML = `<div class="grid2">
+        <div class="card"><div class="card-title" style="margin-bottom:10px">Banner ad networks</div>
+          ${[['google', 'Google Ad Manager', 'Programmatic display & native. Contextual targeting only.'], ['microsoft', 'Microsoft Advertising', 'Microsoft publisher demand, display & native.'], ['direct', 'Direct-sold (eBuzz brands)', 'Highest CPM, labelled "Ad · eBuzz direct".']].map(([k, n, d]) => `<div class="set-row"><div>${n}<small>${d}</small></div><label class="toggle"><input type="checkbox" data-net="${k}" ${cfg.networks[k] ? 'checked' : ''}><span></span></label></div>`).join('')}
+          <p class="muted" style="font-size:12.5px;margin:10px 0 0">Integration: Google Publisher Tag / Prebid.js header bidding in production, loaded only after consent (GPC honoured).</p></div>
+        <div class="card"><div class="card-title" style="margin-bottom:10px">Placement & safety</div>
+          <div class="grid2"><label class="field">Banner after every N posts<input type="number" min="2" max="12" data-int value="${cfg.interval}"></label><label class="field">Max banners per feed session<input type="number" min="0" max="20" data-cap value="${cfg.cap}"></label></div>
+          <label class="field" style="margin-top:10px">Blocked ad categories<div class="chips" data-blk>${['Gambling', 'Alcohol', 'Political', 'Crypto', 'Dating', 'Weight loss'].map((c) => `<button class="chip ${cfg.blocked.includes(c) ? 'on' : ''}">${c}</button>`).join('')}</div></label>
+          <div class="set-row"><div>Contextual targeting only<small>No personal data is shared with ad networks. Locked by policy.</small></div><label class="toggle"><input type="checkbox" checked disabled><span></span></label></div>
+          <div class="row" style="margin-top:10px"><button class="btn primary" data-save>Save & publish</button></div></div></div>`;
+      $$('[data-blk] .chip', body).forEach((c) => (c.onclick = () => c.classList.toggle('on')));
+      $('[data-save]', body).onclick = async () => {
+        const n = { interval: Math.max(2, +$('[data-int]', body).value), cap: Math.max(0, +$('[data-cap]', body).value), networks: Object.fromEntries($$('[data-net]', body).map((i) => [i.dataset.net, i.checked])), blocked: $$('[data-blk] .chip.on', body).map((c) => c.textContent), contextualOnly: true };
+        await D.put('config', { id: 'feed_ads', json: JSON.stringify(n), updated_at: new Date().toISOString() });
+        EB.toast('Ad settings published: shopper and vendor feeds update right away');
+      };
+      return;
+    }
+    const list = ft === 'Queue' ? queue : ft === 'Promotion review' ? pending : all;
+    const wrap = EB.h('<div class="feed-wrap" style="max-width:760px;margin:0"></div>'); body.append(wrap);
+    if (ft !== 'All posts') wrap.append(EB.h(`<div>${EB.aiNote(ft === 'Queue' ? 'The Moderation agent pre-screens every post (spam, off-platform selling, harassment, undisclosed incentives, personal data). Items above the risk threshold wait here for a human decision. Target: under 2 hours.' : 'Every Sponsored promotion is checked for truthful pricing (vs. list and floor), required labels, blocked categories and targeting rules before going live.')}</div>`));
+    EB.feed.render(wrap, { posts: list, ads: false, cardOpts: { moderation: true, showStats: ft === 'Promotion review', refresh: () => feedAdmin(), extra: (p) =>
+      p.status === 'flagged' ? '<button data-ok>✓ Approve</button><button data-disc>Add disclosure & approve</button><button data-rm style="color:var(--red)">✕ Remove</button>'
+      : p.status === 'pending' ? '<button data-ok>✓ Approve & go live</button><button data-rm style="color:var(--red)">✕ Reject</button>'
+      : p.status === 'removed' ? '<button data-ok>↺ Restore</button>' : '<button data-rm style="color:var(--red)">✕ Remove</button>',
+      bind: (el, p) => {
+        const ok = $('[data-ok]', el), rm = $('[data-rm]', el), disc = $('[data-disc]', el);
+        if (ok) ok.onclick = () => act(p, { status: 'published', mod_flags: '', mod_score: 0.05 }, p.kind === 'promo' ? 'Promotion approved: live in the feed now' : 'Post approved');
+        if (rm) rm.onclick = () => act(p, { status: 'removed' }, p.kind === 'promo' ? 'Promotion rejected; vendor notified with the reason' : 'Post removed; author notified with the policy reason');
+        if (disc) disc.onclick = () => act(p, { status: 'published', incentivized: 1, mod_flags: '' }, 'Published with an "incentivized" disclosure label');
+      } } });
   }
 
   function winLimits() {
@@ -248,6 +302,7 @@
 
   chat.onText = (t) => {
     const s = t.toLowerCase();
+    if (/feed|moderat|post|review queue|banner|ads? network|promotion/.test(s)) { EB.setNav('feed'); return feedAdmin(); }
     if (/limit|cap/.test(s)) { EB.setNav('limits'); return winLimits(); }
     if (/staff|territory|associate|role|access|rbac|permission/.test(s)) { EB.setNav('staff'); return staffView(); }
     if (/dashboard|all transactions|ledger/.test(s)) { EB.setNav('board'); return board(); }
@@ -261,9 +316,11 @@
   ctx();
   D.init({ persona: 'admin', seed }).then(() => {
     EB.bindSyncChip();
-    D.on((e) => { if (e.type !== 'remote') return; const cur = $('.view.on'); if (cur && cur.dataset.view === 'board') board(); });
+    const b = $('[data-nav=feed] .badge'); if (b) { const n = EB.feed.list().filter((p) => ['flagged', 'pending'].includes(p.status)).length; b.textContent = n; b.style.display = n ? '' : 'none'; }
+    D.on((e) => { if (e.type !== 'remote') return; const cur = $('.view.on'); if (cur && cur.dataset.view === 'board') board(); if (cur && cur.dataset.view === 'feed') feedAdmin(); });
   });
   chat.bot(['<h2 style="font-size:24px;margin-bottom:6px">Admin Console</h2><p>Morning, Alex. The books are reconciled up to 6:00am. <b>One approval</b> is blocking vendor payouts. Full lists are in the <a href="#" onclick="document.querySelector(\'[data-nav=board]\').click();return false">Dashboard</a>.</p>'], { delay: 300 });
   W.overview();
-  EB.setSuggest([...Object.entries(LABELS).map(([id, label]) => ({ label, id })), { label: 'Change win limits', id: 'limits' }, { label: 'Add a Territory Manager', id: 'staff' }], (c) => { if (c.id === 'limits') { EB.setNav('limits'); return winLimits(); } if (c.id === 'staff') { EB.setNav('staff'); return staffView(); } EB.setNav(c.id); chat.user(c.label); W[c.id](); });
+  if (location.hash === '#feed') setTimeout(() => { EB.setNav('feed'); feedAdmin(); }, 600);
+  EB.setSuggest([...Object.entries(LABELS).map(([id, label]) => ({ label, id })), { label: 'Change win limits', id: 'limits' }, { label: 'Review flagged posts & promotions', id: 'feed' }, { label: 'Add a Territory Manager', id: 'staff' }], (c) => { if (c.id === 'limits') { EB.setNav('limits'); return winLimits(); } if (c.id === 'feed') { EB.setNav('feed'); return feedAdmin(); } if (c.id === 'staff') { EB.setNav('staff'); return staffView(); } EB.setNav(c.id); chat.user(c.label); W[c.id](); });
 })();

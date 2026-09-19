@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/ebuzz.css">
+<link rel="stylesheet" href="assets/css/ebuzz.css?v=8">
 </head>
 <body>
 <header class="site-nav"><div class="in">
@@ -61,15 +61,25 @@
     </div>
   </section>
 
+  <section class="section" id="feed">
+    <h2>Buzz Feed: social proof that travels</h2>
+    <p class="sub">One social feed in the Shopper, Vendor and Admin portals. Real reviews and stories, labelled brand promotions and contextual banner ads, with moderation built in.</p>
+    <div class="grid3">
+      <div class="card"><span class="tag honey">Shoppers</span><h3 style="margin:10px 0 6px">Post & share</h3><p class="muted" style="margin:0">Reviews with star ratings and a Verified purchase badge, stories, tips and questions. Share to TikTok, Instagram, Facebook, X, or copy a link.</p></div>
+      <div class="card"><span class="tag violet">Vendors</span><h3 style="margin:10px 0 6px">Promote & reply</h3><p class="muted" style="margin:0">Sponsored promotions with budgets and targeting (reviewed by eBuzz), brand replies to reviews, and a view of every mention.</p></div>
+      <div class="card"><span class="tag blue">Admin</span><h3 style="margin:10px 0 6px">Moderate & monetise</h3><p class="muted" style="margin:0">AI plus human moderation, promotion ad review, and banner ads from Google Ad Manager and Microsoft Advertising, contextual-only and capped.</p></div>
+    </div>
+  </section>
+
   <section class="section" id="portals">
     <h2>Clickable prototype</h2>
     <p class="sub">Every portal is chat-first: a copilot in the centre, interactive components inside the conversation, and a context panel with only what matters right now.</p>
     <div class="grid3">
-      <a class="card portal-card" href="app/customer.html"><span class="tag honey" style="align-self:flex-start">Shopper</span><h3>Customer Concierge</h3><p class="muted" style="margin:0">Problem → plan → shortlist → live offers. A persistent cart &amp; checkout pane with "For you" suggestions from context and on-device memory, a dashboard of every transaction, playable games with win limits, Wallet and Account.</p><span class="go">Open →</span></a>
-      <a class="card portal-card" href="app/vendor.html"><span class="tag violet" style="align-self:flex-start">Vendor Manager</span><h3>Deal Room</h3><p class="muted" style="margin:0">Live shopper sessions, anonymised "price to beat", AI-suggested offers, "Need 5 min", auto-bid rules, win/loss analytics, Deal Boost.</p><span class="go">Open →</span></a>
+      <a class="card portal-card" href="app/customer.html"><span class="tag honey" style="align-self:flex-start">Shopper</span><h3>Customer Concierge</h3><p class="muted" style="margin:0">Problem → plan → shortlist → live offers. A persistent cart &amp; checkout pane with "For you" suggestions, the <b>Buzz Feed</b> (post reviews &amp; stories, share to TikTok, Instagram, Facebook, X), a dashboard of every transaction, games with win limits, Wallet and Account.</p><span class="go">Open →</span></a>
+      <a class="card portal-card" href="app/vendor.html"><span class="tag violet" style="align-self:flex-start">Vendor Manager</span><h3>Deal Room</h3><p class="muted" style="margin:0">Live shopper sessions, anonymised "price to beat", AI-suggested offers, "Need 5 min", auto-bid rules, win/loss analytics, Deal Boost, and the <b>Buzz Feed</b> (mentions, brand replies, Sponsored promotions).</p><span class="go">Open →</span></a>
       <a class="card portal-card" href="app/supplier.html"><span class="tag green" style="align-self:flex-start">Supplier</span><h3>Supplier Hub</h3><p class="muted" style="margin:0">Dashboard with every transaction, team &amp; role-based access, contracts &amp; e-sign, SKU upload with AI validation, inventory, orders, payouts, compliance.</p><span class="go">Open →</span></a>
-      <a class="card portal-card" href="app/admin.html"><span class="tag blue" style="align-self:flex-start">Admin</span><h3>Admin Console</h3><p class="muted" style="margin:0">Platform dashboard with every transaction, daily/weekly/monthly win limits, staff &amp; RBAC (Territory Managers, CS Associates), payouts, reconciliation, tax, forecast.</p><span class="go">Open →</span></a>
-      <a class="card portal-card" href="app/agents.html"><span class="tag" style="align-self:flex-start">COO · Agent Ops</span><h3>Agent Control Tower</h3><p class="muted" style="margin:0">24 agents across 8 domains, human-approval queue (videos, Top10 pages, outreach), Problem Radar, incidents, autonomy policies.</p><span class="go">Open →</span></a>
+      <a class="card portal-card" href="app/admin.html"><span class="tag blue" style="align-self:flex-start">Admin</span><h3>Admin Console</h3><p class="muted" style="margin:0">Platform dashboard with every transaction, <b>Buzz Feed moderation &amp; ad review</b>, banner ad networks (Google, Microsoft), daily/weekly/monthly win limits, staff &amp; RBAC, payouts, reconciliation, tax, forecast.</p><span class="go">Open →</span></a>
+      <a class="card portal-card" href="app/agents.html"><span class="tag" style="align-self:flex-start">COO · Agent Ops</span><h3>Agent Control Tower</h3><p class="muted" style="margin:0">26 agents across 8 domains, human-approval queue (videos, Top10 pages, outreach, feed moderation), Problem Radar, incidents, autonomy policies.</p><span class="go">Open →</span></a>
       <div class="card" style="background:var(--honey-soft);border-color:transparent"><h3 style="margin-bottom:8px">⚡ Try the live negotiation</h3><p style="margin:0 0 12px;color:var(--honey-ink)">Open <b>Shopper</b> and <b>Deal Room</b> in two browser tabs side by side. Say "my back hurts" as the shopper, then tap <b>Ask for a better deal</b>. The request shows up in the Deal Room, and your offer (or "Need 5 min") goes straight back to the shopper. Admin, Supplier and Agent Ops update live too.</p><div class="row wrap"><a class="btn sm primary" href="app/customer.html" target="_blank">Shopper tab</a><a class="btn sm" href="app/vendor.html" target="_blank">Deal Room tab</a></div></div>
     </div>
   </section>
@@ -132,7 +142,7 @@
 
   <section class="section">
     <h2>An AI-first company</h2>
-    <p class="sub">24 agents run every operational process. Humans approve anything that publishes content, signs contracts or moves money.</p>
+    <p class="sub">26 agents run every operational process. Humans approve anything that publishes content, signs contracts or moves money.</p>
     <div class="chips">
       <span class="tag honey">Problem Radar</span><span class="tag honey">Review Miner</span><span class="tag honey">Product Research</span><span class="tag violet">Top10 Lists</span><span class="tag violet">Video Studio (human-approved)</span><span class="tag violet">Publisher</span><span class="tag green">Supplier Scout & Outreach</span><span class="tag green">Contract Agent</span><span class="tag green">Catalog QA</span><span class="tag blue">Shopping Concierge</span><span class="tag blue">Negotiation Broker</span><span class="tag blue">Search-to-Order</span><span class="tag">Track Shipping</span><span class="tag">Returns & Refunds</span><span class="tag">Customer Service</span><span class="tag honey">Order-to-Cash</span><span class="tag honey">FP&A</span><span class="tag honey">Tax</span><span class="tag red">Fraud & Trust</span><span class="tag red">Legal</span><span class="tag red">Regulatory Watch</span><span class="tag green">Game Economy</span><span class="tag green">Ad Ops</span><span class="tag green">Vendor Success</span>
     </div>
@@ -145,7 +155,7 @@
   <p style="margin:10px 0 0">All brands, products, people and figures in the prototype are fictional or illustrative. Financials are planning estimates, not a forecast or an offer of securities.</p>
 </div></footer>
 
-<script src="assets/js/ui.js"></script>
+<script src="assets/js/ui.js?v=8"></script>
 <script>
   document.getElementById('brand').insertAdjacentHTML('afterbegin', EB.logo());
   document.querySelectorAll('[data-logo]').forEach((e) => (e.innerHTML = EB.logo(30)));

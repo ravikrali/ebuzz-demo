@@ -9,8 +9,8 @@
     ['Commerce', [['Shopping Concierge', 'chat', 'running', 'L3', 28140, 96.8], ['Negotiation Broker', 'bolt', 'running', 'L3', 4210, 99.6], ['Search-to-Order', 'box', 'running', 'L3', 5186, 99.8]]],
     ['Fulfilment & service', [['Track Shipping', 'truck', 'running', 'L3', 7410, 99.2], ['Returns & Refunds', 'ret', 'running', 'L2', 211, 98.1], ['Customer Service', 'chat', 'running', 'L2', 3380, 91.4]]],
     ['Money', [['Order-to-Cash', 'dollar', 'approval', 'L1', 5186, 99.9], ['FP&A', 'chart', 'running', 'L2', 30, 100], ['Tax', 'gavel', 'running', 'L1', 48, 100]]],
-    ['Risk & compliance', [['Fraud & Trust', 'shield', 'running', 'L2', 612, 97.5], ['Legal', 'gavel', 'idle', 'L0', 6, 100], ['Regulatory Watch', 'alert', 'running', 'L1', 41, 100]]],
-    ['Growth', [['Game Economy', 'trophy', 'running', 'L2', 284000, 99.9], ['Ad Ops', 'megaphone', 'running', 'L2', 1120, 99.4], ['Vendor Success', 'users', 'running', 'L2', 96, 98.0]]],
+    ['Risk & compliance', [['Fraud & Trust', 'shield', 'running', 'L2', 612, 97.5], ['Feed Moderation', 'feed', 'approval', 'L1', 1840, 98.2], ['Legal', 'gavel', 'idle', 'L0', 6, 100], ['Regulatory Watch', 'alert', 'running', 'L1', 41, 100]]],
+    ['Growth', [['Game Economy', 'trophy', 'running', 'L2', 284000, 99.9], ['Ad Ops', 'megaphone', 'running', 'L2', 1120, 99.4], ['Social Distribution', 'send', 'running', 'L2', 640, 99.1], ['Vendor Success', 'users', 'running', 'L2', 96, 98.0]]],
   ];
   const ST = { running: ['green', 'Running'], approval: ['honey', 'Needs approval'], idle: ['', 'Idle'], paused: ['red', 'Paused'] };
 
@@ -19,7 +19,7 @@
     user: { name: 'Sam Patel', role: 'COO · Agent Ops', initials: 'SP' },
     rail: [
       { id: 'fleet', label: 'Fleet', icon: 'cpu' },
-      { id: 'approvals', label: 'Approvals', icon: 'check', badge: 4 },
+      { id: 'approvals', label: 'Approvals', icon: 'check', badge: 5 },
       { id: 'radar', label: 'Radar', icon: 'radar' },
       { id: 'studio', label: 'Studio', icon: 'video' },
       { id: 'outreach', label: 'Outreach', icon: 'users' },
@@ -35,16 +35,16 @@
 
   $('#context').innerHTML = `
     <div class="ctx-section"><div class="row between"><h4 style="margin:0">Fleet health</h4><button class="icon-btn ctx-close" onclick="EB.closeOverlays()" aria-label="Close">${icon('x')}</button></div>
-      ${EB.kpis([['Agents', '24'], ['Tasks today', '412k'], ['Success', '98.6%'], ['Human hrs saved', '1,930']])}</div>
+      ${EB.kpis([['Agents', '26'], ['Tasks today', '412k'], ['Success', '98.6%'], ['Human hrs saved', '1,930']])}</div>
     <div class="ctx-section"><h4>Spend today</h4><div class="row between" style="font-size:13px"><span>Model inference</span><b>$1,642</b></div><div class="meter v" style="margin:6px 0 10px"><i style="width:55%"></i></div><div class="row between" style="font-size:13px"><span>Video generation</span><b>$388</b></div><div class="meter v" style="margin-top:6px"><i style="width:31%"></i></div><div class="muted" style="font-size:12px;margin-top:8px">$0.39 per order · budget $0.45</div></div>
     <div class="ctx-section"><h4>Event stream <span class="tag green"><i class="dot live"></i></span></h4><div id="ev" class="stack mono" style="gap:5px;font-size:11.5px"></div></div>`;
   const ev = (t) => { const e = $('#ev'); if (!e) return; e.prepend(h(`<div>${new Date().toTimeString().slice(0, 8)} ${t}</div>`)); while (e.children.length > 9) e.lastChild.remove(); };
-  const RANDOM = ['Concierge › session resolved (back pain)', 'Negotiation Broker › session closed · 3 offers', 'Catalog QA › 12 SKUs normalised', 'Track Shipping › ETA update sent', 'Fraud & Trust › promo abuse blocked', 'Review Miner › 1,204 reviews summarised', 'Game Economy › pool rebalanced', 'Problem Radar › new cluster: "garage too cold"'];
+  const RANDOM = ['Concierge › session resolved (back pain)', 'Negotiation Broker › session closed · 3 offers', 'Catalog QA › 12 SKUs normalised', 'Track Shipping › ETA update sent', 'Fraud & Trust › promo abuse blocked', 'Review Miner › 1,204 reviews summarised', 'Game Economy › pool rebalanced', 'Feed Moderation › 38 posts screened', 'Social Distribution › story card generated', 'Problem Radar › new cluster: "garage too cold"'];
   setInterval(() => ev(RANDOM[Math.floor(Math.random() * RANDOM.length)]), 2600);
   bus.on('*', (type, d) => { if (type.startsWith('presence')) return; ev(`<b>${type}</b> ${d && d.sid ? '#' + d.sid : ''}${d && d.id && !d.sid ? d.id : ''}`); });
 
   function fleet() {
-    EB.view('fleet', `<div class="row between wrap" style="margin-bottom:16px;gap:10px"><div><h1 style="font-size:28px">Agent fleet</h1><div class="muted">24 agents across 8 domains · every operational process has an owner agent and a human owner</div></div><button class="btn" onclick="document.querySelector('[data-nav=approvals]').click()">${icon('check')} 4 approvals waiting</button></div>
+    EB.view('fleet', `<div class="row between wrap" style="margin-bottom:16px;gap:10px"><div><h1 style="font-size:28px">Agent fleet</h1><div class="muted">26 agents across 8 domains · every operational process has an owner agent and a human owner</div></div><button class="btn" onclick="document.querySelector('[data-nav=approvals]').click()">${icon('check')} 5 approvals waiting</button></div>
       ${FLEET.map(([dom, agents]) => `<h3 style="font-size:15px;margin:18px 0 10px;color:var(--muted);font-family:var(--font);text-transform:uppercase;letter-spacing:.06em">${dom}</h3>
         <div class="products" style="grid-template-columns:repeat(auto-fill,minmax(230px,1fr))">${agents.map(([n, ic, st, lv, tasks, ok]) => `<div class="card" style="padding:14px">
           <div class="row between"><div class="row"><div class="avatar v" style="border-radius:10px">${icon(ic)}</div><b style="font-size:14px">${n}</b></div><span class="tag">${lv}</span></div>
@@ -59,10 +59,11 @@
         ['doc', 'Top10: "Best white-noise machines for light sleepers (2026)"', 'Top10 Lists · 14 sources · editor review', 'top10'],
         ['users', '38 outreach emails to pet-toy brands', 'Supplier Scout · CAN-SPAM checks passed', 'outreach'],
         ['dollar', 'Weekly payout batch PB-0918: $292,627', 'Order-to-Cash · 1 fraud hold', 'fin'],
+        ['feed', 'Buzz Feed: 2 held posts + 1 vendor promotion', 'Feed Moderation · spam, undisclosed incentive, ad review', 'feed'],
       ].map(([ic, t, s, k]) => `<div class="set-row"><div class="row" style="gap:12px"><div class="avatar v" style="border-radius:10px">${icon(ic)}</div><div>${t}<small>${s}</small></div></div><button class="btn sm primary" data-k="${k}">Review</button></div>`).join('')}</div>`);
       $$('.avatar svg', c).forEach((s) => { s.style.width = '17px'; s.style.height = '17px'; });
-      await chat.bot(['4 items are waiting for a human decision:', c]);
-      $$('[data-k]', c).forEach((b) => (b.onclick = () => { const k = b.dataset.k; if (k === 'studio') W.studio(); else if (k === 'outreach') W.outreach(); else if (k === 'fin') location.href = 'admin.html'; else W.top10(); }));
+      await chat.bot(['5 items are waiting for a human decision:', c]);
+      $$('[data-k]', c).forEach((b) => (b.onclick = () => { const k = b.dataset.k; if (k === 'studio') W.studio(); else if (k === 'outreach') W.outreach(); else if (k === 'fin') location.href = 'admin.html'; else if (k === 'feed') location.href = 'admin.html#feed'; else W.top10(); }));
     },
     async studio() {
       const c = h(`<div class="card"><div class="grid2" style="align-items:start">
@@ -120,6 +121,8 @@
         ['Video Studio / Top10', 'L1', 'Nothing published without an editor', 'Content lead'],
         ['Supplier Outreach', 'L1', 'CAN-SPAM; ≤ 20 emails/hr/domain', 'Vendor Success'],
         ['Game Economy', 'L2', 'Prize pool ≤ 40% of Play ad revenue', 'Finance'],
+        ['Feed Moderation', 'L1', 'Auto-publish only below risk 0.5; removals of verified reviews need a human', 'Trust & Safety'],
+        ['Social Distribution', 'L2', 'Reposts shopper content to brand socials only with the author’s consent', 'Growth'],
         ['Legal', 'L0', 'Drafts only', 'General counsel'],
       ], { left: true })}</div>`)]);
     },
@@ -138,6 +141,6 @@
   $('[data-f]', summary).onclick = () => { EB.setNav('fleet'); fleet(); };
   $('[data-a]', summary).onclick = () => { EB.setNav('approvals'); chat.user(LABELS.approvals); W.approvals(); };
   EB.setNav('');
-  chat.bot(['<h2 style="font-size:24px;margin-bottom:6px">Agent Control Tower</h2><p>Hi Sam. 24 agents are running across every operational process. <b>4 items need you</b>: a video, a Top10 page, an outreach batch, and a payout batch.</p>', summary], { delay: 200 });
+  chat.bot(['<h2 style="font-size:24px;margin-bottom:6px">Agent Control Tower</h2><p>Hi Sam. 26 agents are running across every operational process. <b>5 items need you</b>: a video, a Top10 page, an outreach batch, a payout batch, and the Buzz Feed moderation queue.</p>', summary], { delay: 200 });
   EB.setSuggest(Object.entries(LABELS).map(([id, label]) => ({ label, id })), (c) => { EB.setNav(c.id); chat.user(c.label); W[c.id](); });
 })();

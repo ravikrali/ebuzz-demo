@@ -45,7 +45,7 @@ On Amazon or Temu, brands pay to be *seen* (sponsored listings, often 20–40% o
 
 1. **Demand side:** Problem-solving content (Top10 lists, short videos) plus a chat concierge pull in shoppers with specific problems, which means high intent.
 2. **Supply side:** Vendors join because eBuzz gives them something no other channel gives: a **last-mile chance to win a customer who is about to buy a competitor's product**, and they pay only when they win (commission).
-3. **Engagement:** Games paid for by ads give shoppers a reason to come back when they aren't shopping. Credits won nudge them into the next purchase.
+3. **Engagement:** Games paid for by ads give shoppers a reason to come back when they aren't shopping. Credits won nudge them into the next purchase. The **Buzz Feed** adds real reviews and stories that shoppers share to TikTok, Instagram, Facebook and X, which brings in new shoppers at almost no cost and creates labelled Sponsored and banner ad inventory.
 4. **Data moat:** Every Deal Room session creates a data point about price elasticity: *what discount, for which problem, beats which competitor*. No catalog marketplace has this data. It powers vendor auto-bidding and becomes a paid insight product.
 
 ## 5. Why eBuzz can win against giants
@@ -75,6 +75,7 @@ On Amazon or Temu, brands pay to be *seen* (sponsored listings, often 20–40% o
 | H4 | Ad-funded games raise 30-day retention without destroying margin | Prize liability > 45% of game ad revenue, or D30 lift < 5 pts | Prize-pool governor; cohort analysis |
 | H5 | AI content drives CAC-efficient traffic | Blended CAC > $25 in year 1 | Top10 + video engine on 50 problem clusters |
 | H6 | Shoppers won't abuse "ask for discount" | > 60% of orders go through the discount-request flow | Rate limits + intent gating |
+| H7 | Shoppers post and share on the Buzz Feed, and shares bring new buyers | < 5% share rate, or < 3% of new visitors come from shares | Share tracking; verified-review coverage per problem cluster |
 
 ## 7. The critical risks and how we handle them
 

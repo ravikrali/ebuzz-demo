@@ -129,7 +129,7 @@
     const counts = await D.centralCounts();
     const scope = D.SCOPES[D.persona];
     const other = D.device === 'phone' ? 'laptop' : 'phone';
-    const defaultSQL = { customer: 'SELECT type, COUNT(*) AS n, ROUND(SUM(amount),2) AS total\nFROM wallet_tx GROUP BY type;', supplier: 'SELECT type, COUNT(*) AS n, ROUND(SUM(net),2) AS net\nFROM sup_tx GROUP BY type ORDER BY net DESC;', admin: 'SELECT type, COUNT(*) AS n, ROUND(SUM(amount),2) AS amount\nFROM plat_tx GROUP BY type;' }[D.persona] || `SELECT name FROM sqlite_master WHERE type='table';`;
+    const defaultSQL = { customer: 'SELECT type, COUNT(*) AS n, ROUND(SUM(amount),2) AS total\nFROM wallet_tx GROUP BY type;', supplier: 'SELECT type, COUNT(*) AS n, ROUND(SUM(net),2) AS net\nFROM sup_tx GROUP BY type ORDER BY net DESC;', admin: 'SELECT type, COUNT(*) AS n, ROUND(SUM(amount),2) AS amount\nFROM plat_tx GROUP BY type;', vendor: 'SELECT kind, status, COUNT(*) AS posts, SUM(likes) AS likes\nFROM feed_posts GROUP BY kind, status;' }[D.persona] || `SELECT name FROM sqlite_master WHERE type='table';`;
     body.innerHTML = `
       <div class="card flat" style="margin-bottom:14px"><div class="row between wrap"><div><b>${D.deviceLabel(D.device)}</b><div class="muted" style="font-size:13px">This device's SQLite database, saved in the browser. It syncs with eBuzz central.</div></div>
         <div class="row wrap"><a class="btn sm primary" href="?device=${other}" target="_blank">Open as ${D.deviceLabel(other)}</a><button class="btn sm" data-pull>Sync now</button></div></div>

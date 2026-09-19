@@ -19,10 +19,11 @@
       { id: 'rules', label: 'Auto-bid', icon: 'sliders' },
       { id: 'analytics', label: 'Win / Loss', icon: 'chart' },
       { id: 'boost', label: 'Boost', icon: 'megaphone' },
+      { id: 'feed', label: 'Buzz Feed', icon: 'feed' },
     ],
     placeholder: 'Ask Deal Copilot, e.g. "why are we losing?" or "create a rule"',
     note: 'You see an anonymised shopper and the price to beat for this session only. Competitor identities and history are never shared.',
-    onNav: (id) => (id === 'live' ? EB.view('chat') : id === 'rules' ? rules() : id === 'analytics' ? analytics() : boost()),
+    onNav: (id) => (id === 'live' ? EB.view('chat') : id === 'rules' ? rules() : id === 'analytics' ? analytics() : id === 'feed' ? feed() : boost()),
   });
   EB.setNav('live');
 
@@ -177,6 +178,44 @@
     }
   }
 
+  /* ---------- Buzz Feed: brand view, promotions & replies ---------- */
+  const D = EB.data, BRAND = 'ErgoMax';
+  let vf = 'Mentions';
+  function feed() {
+    const all = EB.feed.list();
+    const mine = all.filter((p) => p.author_id === 'brand_ergomax');
+    const mentions = all.filter((p) => p.vendor === BRAND && p.author_id !== 'brand_ergomax' && p.status === 'published');
+    const avg = mentions.filter((p) => p.rating).reduce((a, p, _, arr) => a + p.rating / arr.length, 0);
+    const imp = mine.reduce((a, p) => a + (+p.impressions || 0), 0), clk = mine.reduce((a, p) => a + (+p.clicks || 0), 0);
+    const v = EB.view('feed', `<div class="feed-wrap">
+      <div><h1 style="font-size:28px">Buzz Feed · ErgoMax</h1><div class="muted">See what shoppers say about you, reply as the brand, and run Sponsored promotions. Every promotion is ad-reviewed by eBuzz before it goes live.</div></div>
+      ${EB.kpis([['Mentions', mentions.length], ['Avg rating', avg ? avg.toFixed(1) + '★' : '-'], ['Promo impressions', imp.toLocaleString()], ['Promo CTR', imp ? ((clk / imp) * 100).toFixed(1) + '%' : '-']])}
+      <div class="card composer-card"><div class="card-title" style="margin-bottom:10px">${icon('megaphone')} Create a Sponsored promotion</div>
+        <div class="grid2"><label class="field">Product<select data-sku><option value="ergomax" data-lp="329">ErgoMax Pro Lumbar ($329)</option><option value="lite" data-lp="229">ErgoMax Lite ($229)</option><option value="foot" data-lp="49">ErgoMax Footrest ($49)</option></select></label>
+          <label class="field">Promo price ($)<input type="number" data-price value="299"></label></div>
+        <label class="field" style="margin-top:10px">Message<textarea data-text>Working from home? Pro Lumbar's 4-way lumbar support + 12-year warranty. Feed-exclusive price this week.</textarea></label>
+        <div class="grid2" style="margin-top:10px"><label class="field">Target problems<div class="chips" data-tg>${['Back pain', 'Posture', 'Tailbone pain', 'Standing desk'].map((t, i) => `<button class="chip ${i < 2 ? 'on' : ''}">${t}</button>`).join('')}</div></label>
+          <label class="field">Daily budget ($)<input type="number" data-budget value="150"></label></div>
+        <div class="row between wrap" style="margin-top:10px;gap:8px"><span class="muted" style="font-size:12.5px">Labelled "Sponsored" · contextual targeting only (no personal data) · price must respect your floor</span><button class="btn primary" data-submit>Submit for ad review</button></div></div>
+      <div class="chips" data-filters>${['Mentions', 'My promotions', 'All posts'].map((f) => `<button class="chip ${f === vf ? 'on' : ''}" data-f="${f}">${f}</button>`).join('')}</div>
+      <div class="feed-wrap" data-list style="max-width:none"></div></div>`);
+    $$('[data-tg] .chip', v).forEach((c) => (c.onclick = () => c.classList.toggle('on')));
+    $$('[data-f]', v).forEach((b) => (b.onclick = () => { vf = b.dataset.f; feed(); }));
+    $('[data-submit]', v).onclick = async () => {
+      const sel = $('[data-sku]', v), sku = sel.value, list = +sel.selectedOptions[0].dataset.lp, price = +$('[data-price]', v).value;
+      if (CATALOG[sku] && price < CATALOG[sku].floor) return EB.toast(`Below your floor (${money(CATALOG[sku].floor, 0)}). Blocked by guardrail.`);
+      if (price >= list) return EB.toast('Promo price must be below list price');
+      const names = { ergomax: 'ErgoMax Pro Lumbar', lite: 'ErgoMax Lite', foot: 'ErgoMax Footrest' };
+      const post = { id: D.id('fp'), author_id: 'brand_ergomax', author: BRAND, avatar: '🪑', kind: 'promo', text: $('[data-text]', v).value.trim(), rating: null, product: names[sku], sku, vendor: BRAND, emoji: sku === 'foot' ? '🦶' : '🪑', promo_price: price, list_price: list, cta: 'Get offer', sponsored: 1, status: 'pending', likes: 0, shares: 0, comments_json: '[]', mod_score: 0.05, mod_flags: '', impressions: 0, clicks: 0, targets: $$('[data-tg] .chip.on', v).map((c) => c.textContent).join(','), incentivized: 0, verified: 0, created_at: new Date().toISOString() };
+      await D.put('feed_posts', post);
+      EB.bus.emit('feed:promo', { id: post.id });
+      EB.toast('Submitted. eBuzz ad review usually takes under 1 hour.');
+      vf = 'My promotions'; feed();
+    };
+    const posts = vf === 'Mentions' ? mentions : vf === 'My promotions' ? mine : all.filter((p) => p.status === 'published');
+    EB.feed.render($('[data-list]', v), { posts, ads: vf === 'All posts', cardOpts: { showStats: vf === 'My promotions', commentAs: { name: BRAND, brand: true }, refresh: () => feed() } });
+  }
+
   /* ---------- other views ---------- */
   const RULES = [
     { on: true, name: 'Rank > #1 & intent ≥ 70', sku: 'ErgoMax Pro Lumbar', act: 'Match price to beat + $30, add lumbar pillow', floor: 279 },
@@ -223,13 +262,19 @@
     const s = t.toLowerCase();
     if (/rule/.test(s)) { chat.bot('Opening your auto-bid rules. I added two suggestions based on last month.'); return setTimeout(() => { EB.setNav('rules'); rules(); }, 700); }
     if (/los|why|win/.test(s)) return chat.bot([`Over the last 30 days you lost <b>64%</b> of sessions. The main reason: <b>price gap under $15</b> (38% of losses). You won 2.1× more often when you added a lumbar pillow than when you gave the same value as a discount.`, h(`<div class="row"><button class="btn sm ai">Create "+$15 flex" rule</button><button class="btn sm">See Win / Loss</button></div>`)]).then((b) => { const bs = $$('button', b); bs[0].onclick = () => { EB.toast('Rule added (demo)'); }; bs[1].onclick = () => { EB.setNav('analytics'); analytics(); }; });
+    if (/feed|promo|post|review|mention/.test(s)) { chat.bot('Opening the Buzz Feed: mentions of ErgoMax, your promotions and the promotion builder.'); return setTimeout(() => { EB.setNav('feed'); feed(); }, 500); }
     if (/boost|sponsor/.test(s)) return chat.bot('Deal Boost is spending $61 of $150 today with a 41% win rate on boosted views. Open the <b>Boost</b> tab to change it.');
     chat.bot('I can explain losses, draft auto-bid rules, suggest offers for open sessions, or change your Boost budget. Try "why are we losing?"');
   };
 
   renderContext();
+  D.init({ persona: 'vendor', seed: async (t) => { if (t.includes('feed_posts')) await EB.feed.seed(); } }).then(() => {
+    EB.bindSyncChip();
+    D.on((e) => { if (e.type === 'remote' && $('.view.on') && $('.view.on').dataset.view === 'feed') feed(); });
+  });
+  EB.bus.on('feed:post', (m) => { const p = D.get('feed_posts', m.id); if (p && p.vendor === BRAND && m.status === 'published') EB.toast(`💬 New shopper post mentions ${BRAND}`); });
   chat.bot([`<h2 style="font-size:24px;margin-bottom:6px">Deal Room</h2><p>Good morning, Jordan. <b>${K.sessions}</b> shopper sessions have shortlisted ErgoMax today. Auto-bid handled 71% of them. I'll bring you the ones worth a human look.</p>`, EB.aiNote('Open the <a href="customer.html" target="_blank"><b>Shopper portal</b></a> in a second tab to watch a real shopper → vendor negotiation happen live between the two tabs.')], { delay: 300 });
-  EB.setSuggest([{ label: '📉 Why are we losing?', ai: true }, { label: '⚙️ Create an auto-bid rule' }, { label: '📣 How is Boost doing?' }], (c) => { chat.user(c.label); chat.onText(c.label); });
+  EB.setSuggest([{ label: '📉 Why are we losing?', ai: true }, { label: '⚙️ Create an auto-bid rule' }, { label: '📣 How is Boost doing?' }, { label: '💬 What are shoppers posting about us?' }], (c) => { chat.user(c.label); chat.onText(c.label); });
   setTimeout(simulate, 2500);
   setTimeout(simulate, 14000);
   setTimeout(simulate, 32000);

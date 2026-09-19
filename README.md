@@ -17,14 +17,14 @@ eBuzz.ai is a concept for a chat-first marketplace:
 | [`docs/THESIS.md`](docs/THESIS.md) | Investment thesis: why now, the insight, flywheel, moat, hypotheses, risks, the ask |
 | [`docs/BUSINESS_PLAN.md`](docs/BUSINESS_PLAN.md) | Full business plan: validation & recommendations, competition, revenue model, unit economics, GTM, agent architecture, operations, tech, legal/regulatory, team, 5-year financials, KPIs, risks, milestones |
 | `index.html` | Landing page |
-| `architecture.html` | **System architecture**: logical architecture, Deal Room flow, deployment, 40 tool categories with alternatives and pros/cons, security controls, OWASP LLM Top 10 mapping, threat model, compliance program |
-| `roadmap.html` | **Build roadmap**: 29 AI build agents over 26 weeks: Gantt, milestone gates, agent purpose/goal/tasks/dependencies, token, time and cost estimates (editable model), human team, delivery risks |
+| `architecture.html` | **System architecture**: logical architecture, Deal Room flow, deployment, 47 tool categories with alternatives and pros/cons, security controls, OWASP LLM Top 10 mapping, threat model, compliance program |
+| `roadmap.html` | **Build roadmap**: 31 AI build agents over 26 weeks: Gantt, milestone gates, agent purpose/goal/tasks/dependencies, token, time and cost estimates (editable model), human team, delivery risks |
 | `docs.html` | Renders the thesis and plan with a table of contents |
-| `app/customer.html` | **Shopper**: chat concierge, live offers, contextual browse, a persistent **cart & checkout + "For you" suggestions** pane (context + on-device memory), **Dashboard** of every transaction, playable games with win limits, Wallet, Orders, Account & Preferences |
-| `app/vendor.html` | **Vendor Manager, Deal Room**: live sessions, anonymised price-to-beat, AI-suggested offers, *Need 5 min*, auto-bid rules, win/loss, Deal Boost |
+| `app/customer.html` | **Shopper**: chat concierge, live offers, contextual browse, a persistent **cart & checkout + "For you" suggestions** pane (context + on-device memory), the **Buzz Feed** (post reviews, ratings, stories; share to TikTok, Instagram, Facebook, X, copy link; Sponsored promos; banner ads), **Dashboard** of every transaction, playable games with win limits, Wallet, Orders, Account & Preferences |
+| `app/vendor.html` | **Vendor Manager, Deal Room**: live sessions, anonymised price-to-beat, AI-suggested offers, *Need 5 min*, auto-bid rules, win/loss, Deal Boost, **Buzz Feed** (mentions, brand replies, Sponsored promotion builder) |
 | `app/supplier.html` | **Supplier Hub**: **Dashboard** of every transaction, **Team & RBAC**, contracts & e-sign, SKU upload with AI validation, inventory, orders, payouts, compliance |
-| `app/admin.html` | **Admin** (formerly Finance): **Dashboard** of every platform transaction, **daily/weekly/monthly win limits**, **Staff & RBAC** (Territory Managers, CS Associates…), payout approval, reconciliation, tax, forecast |
-| `app/agents.html` | **Agent Ops / COO**: agent fleet, approval queue (video, Top10, outreach), Problem Radar, incidents, autonomy policies |
+| `app/admin.html` | **Admin** (formerly Finance): **Dashboard** of every platform transaction, **Feed & Ads** (moderation queue, promotion ad review, Google/Microsoft banner settings), **daily/weekly/monthly win limits**, **Staff & RBAC** (Territory Managers, CS Associates…), payout approval, reconciliation, tax, forecast |
+| `app/agents.html` | **Agent Ops / COO**: 26-agent fleet, approval queue (video, Top10, outreach, feed moderation), Problem Radar, incidents, autonomy policies |
 
 ## Try the live negotiation
 

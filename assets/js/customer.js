@@ -133,6 +133,7 @@
     tx.push({ id: 'REF-1', user_id: UID, date: D.daysAgo(190), type: 'referral', label: 'Referral bonus (Sam)', amount: 5 }, { id: 'PR-1', user_id: UID, date: D.daysAgo(300), type: 'promo', label: 'Welcome credit', amount: 5 });
     const bal = tx.reduce((a, x) => a + x.amount, 0);
     tx.push({ id: 'EXP-1', user_id: UID, date: D.daysAgo(12), type: 'expired', label: 'Credits expired (60-day rule)', amount: +(3.4 - bal).toFixed(2) });
+    if (tables.includes('feed_posts')) await EB.feed.seed();
     if (tables.includes('orders')) await D.put('orders', orders, { silent: true });
     if (tables.includes('wallet_tx')) await D.put('wallet_tx', tx, { silent: true });
   }
@@ -143,6 +144,7 @@
     user: { name: 'Maya R.', role: 'Wallet …', initials: 'MR' },
     rail: [
       { id: 'chat', label: 'Concierge', icon: 'chat' },
+      { id: 'feed', label: 'Buzz Feed', icon: 'feed' },
       { id: 'dash', label: 'Dashboard', icon: 'grid' },
       { id: 'play', label: 'Play & Win', icon: 'play', badge: 'NEW' },
       { id: 'wallet', label: 'Wallet', icon: 'wallet' },
@@ -166,6 +168,7 @@
     S.view = id;
     if (id === 'chat') EB.view('chat');
     if (id === 'dash') renderDash();
+    if (id === 'feed') renderFeed();
     if (id === 'play') renderPlay();
     if (id === 'wallet') renderWallet();
     if (id === 'orders') renderOrders();
@@ -372,6 +375,7 @@
     if (/discount|deal|cheaper|lower|offer|price/.test(s)) return askDeal();
     if (/riser|monitor|screen/.test(s) && S.problem === 'back') return showRisers();
     if (/compare|difference|vs/.test(s)) return compare();
+    if (/feed|post|review|story|share/.test(s)) { chat.bot('Opening the <b>Buzz Feed</b>, where you can read real reviews and share your own.'); return setTimeout(() => { EB.setNav('feed'); renderFeed(); }, 600); }
     if (/game|play|win/.test(s)) return route(null, 'play');
     if (/wallet|credit|balance/.test(s)) return route(null, 'wallet');
     if (/track|order|where/.test(s)) { const o = D.all('orders', 'ORDER BY date DESC, id DESC LIMIT 1')[0]; return chat.bot(o ? `Your latest order <b>${o.id}</b> (${esc(o.item)}) is <b>${o.status}</b>. The Track Shipping agent will message you if anything changes.` : "You don't have any orders yet."); }
@@ -549,7 +553,7 @@
       S.dealOpen = false; renderContext();
       const pts = Math.round(T.sub);
       await chat.bot([`<div class="ok-note">${icon('check')} ${rows.length > 1 ? `${rows.length} orders` : 'Order'} <b>${ids.join(', ')}</b> placed: ${money(T.total)}.${T.credit ? ` You used ${money(T.credit)} in game credits.` : ''}${T.saved > 0 ? ` You saved ${money(T.saved)} with live offers.` : ''}</div>`, `The <b>Track Shipping</b> agent will keep you posted here. You earned <b>+${pts} Buzz points</b> 🍯. Every order is also listed in your <a href="#" data-dash>Dashboard</a>. ${S.problem === 'back' ? 'Want to finish <b>Step 2</b> of your plan (monitor riser)?' : ''}`]).then((b) => { const d = $('[data-dash]', b); if (d) d.onclick = (e) => { e.preventDefault(); EB.setNav('dash'); nav('dash'); }; });
-      EB.setSuggest([{ label: '🖥️ Yes, show monitor risers', go: 'risers' }, { label: '📦 Track my order', go: 'track' }, { label: '🎮 Play to win more credits', go: 'play' }, { label: '🆕 Different problem', go: 'reset' }], (c2) => (c2.go === 'track' ? (chat.user(c2.label), chat.onText('track')) : route(c2.label, c2.go)));
+      EB.setSuggest([{ label: '⭐ Review it on the Buzz Feed', go: 'review' }, { label: '🖥️ Yes, show monitor risers', go: 'risers' }, { label: '📦 Track my order', go: 'track' }, { label: '🎮 Play to win more credits', go: 'play' }, { label: '🆕 Different problem', go: 'reset' }], (c2) => (c2.go === 'track' ? (chat.user(c2.label), chat.onText('track')) : c2.go === 'review' ? (EB.setNav('feed'), renderFeed({ compose: 'review', product: rows[0].item })) : route(c2.label, c2.go)));
     };
   }
 
@@ -697,6 +701,67 @@
     draw();
   }
 
+  /* ---------------- Buzz Feed (social) ---------------- */
+  let feedFilter = 'For you';
+  function renderFeed(opt = {}) {
+    S.view = 'feed';
+    const me = { id: UID, name: (profile().name || 'Maya R.').replace(/^(\S+)\s+(\S).*$/, '$1 $2.'), avatar: '👩🏽‍💼' };
+    const bought = [...new Map(D.all('orders').filter((o) => o.status !== 'Refunded').map((o) => [o.item, o])).values()];
+    const v = EB.view('feed', `
+      <div class="feed-wrap">
+        <div class="row between wrap" style="gap:10px"><div><h1 style="font-size:28px">Buzz Feed</h1><div class="muted">Real reviews, stories and tips from shoppers solving the same problems. Share yours anywhere.</div></div></div>
+        <div class="card composer-card">
+          <div class="row" style="gap:10px;margin-bottom:10px"><div class="post-av">${me.avatar}</div><div class="seg" data-kind>${['Review', 'Story', 'Tip', 'Question'].map((k) => `<button class="${(opt.compose || 'review') === k.toLowerCase() ? 'on' : ''}" data-k="${k.toLowerCase()}">${k}</button>`).join('')}</div></div>
+          <div data-review class="row wrap" style="gap:10px;margin-bottom:8px"><div class="star-in" data-stars>${[1, 2, 3, 4, 5].map((n) => `<button data-n="${n}" class="${n <= 5 ? 'on' : ''}" aria-label="${n} stars">★</button>`).join('')}</div>
+            <select class="btn sm" data-prod aria-label="Product"><option value="">Choose a product you bought…</option>${bought.map((o) => `<option value="${esc(o.item)}" ${opt.product === o.item ? 'selected' : ''}>${esc(o.emoji || '')} ${esc(o.item)}</option>`).join('')}</select></div>
+          <textarea data-text placeholder="What worked, what didn't? Your experience helps others."></textarea>
+          <div class="row between wrap" style="margin-top:8px;gap:8px">
+            <div class="row wrap" style="gap:12px;font-size:13px"><span class="row" style="gap:4px">Photo: ${['', '📸', '🪑', '🌙', '🐕'].map((e) => `<button class="chip ${e === '' ? 'on' : ''}" data-emo="${e}" style="padding:3px 9px">${e || 'none'}</button>`).join('')}</span>
+              <label class="row" style="gap:6px" title="FTC rules: disclose if you got anything in return"><input type="checkbox" data-inc> I received this product free or was paid</label></div>
+            <button class="btn primary" data-post>Post</button></div>
+          <div class="muted" style="font-size:11.5px;margin-top:6px">Posts are public under your display name <b>${esc(me.name)}</b>. The AI moderator checks for spam and undisclosed incentives. <a href="#" data-guide>Community guidelines</a></div>
+        </div>
+        <div class="chips" data-filters>${['For you', 'Reviews', 'Stories', 'Tips & questions', 'Deals', 'My posts'].map((f) => `<button class="chip ${f === feedFilter ? 'on' : ''}" data-f="${f}">${f}</button>`).join('')}</div>
+        <div class="feed-wrap" data-list style="max-width:none"></div>
+      </div>`);
+    let kind = opt.compose || 'review', stars = 5, emo = '';
+    const syncKind = () => { $('[data-review]', v).style.display = kind === 'review' ? '' : 'none'; };
+    syncKind();
+    $$('[data-kind] button', v).forEach((b) => (b.onclick = () => { $$('[data-kind] button', v).forEach((x) => x.classList.remove('on')); b.classList.add('on'); kind = b.dataset.k; syncKind(); }));
+    $$('[data-stars] button', v).forEach((b) => (b.onclick = () => { stars = +b.dataset.n; $$('[data-stars] button', v).forEach((x) => x.classList.toggle('on', +x.dataset.n <= stars)); }));
+    $$('[data-emo]', v).forEach((b) => (b.onclick = () => { $$('[data-emo]', v).forEach((x) => x.classList.remove('on')); b.classList.add('on'); emo = b.dataset.emo; }));
+    $('[data-guide]', v).onclick = (e) => { e.preventDefault(); EB.modal(`<h3>Community guidelines</h3><ul style="padding-left:18px;line-height:1.7;font-size:14px"><li>Share honest experiences. Reviews from purchases are marked "Verified".</li><li>Disclose anything you received for a post (free product, payment, credits).</li><li>No spam, off-platform selling, harassment or personal information.</li><li>Vendors can reply as their brand but can't edit or remove reviews.</li><li>Sponsored posts and ads are always labelled.</li></ul><button class="btn primary" onclick="EB.closeOverlays()">OK</button>`); };
+    $$('[data-f]', v).forEach((b) => (b.onclick = () => { feedFilter = b.dataset.f; renderFeed(); }));
+    $('[data-post]', v).onclick = async () => {
+      const text = $('[data-text]', v).value.trim();
+      if (text.length < 10) return EB.toast('Write at least a sentence');
+      const prodName = kind === 'review' ? $('[data-prod]', v).value : '';
+      if (kind === 'review' && !prodName) return EB.toast('Choose the product you are reviewing');
+      const o = bought.find((x) => x.item === prodName);
+      const inc = $('[data-inc]', v).checked ? 1 : 0;
+      const m = EB.feed.moderate(text, inc);
+      const post = { id: D.id('fp'), author_id: UID, author: me.name, avatar: me.avatar, kind, text, rating: kind === 'review' ? stars : null, product: o ? o.item : '', sku: o ? o.sku : '', vendor: o ? o.vendor : '', emoji: emo || (o && o.emoji) || '', promo_price: null, list_price: null, cta: '', sponsored: 0, status: m.flags.length ? 'flagged' : 'published', likes: 0, shares: 0, comments_json: '[]', mod_score: m.score, mod_flags: m.flags.join(','), impressions: 0, clicks: 0, targets: '', incentivized: inc, verified: o ? 1 : 0, created_at: new Date().toISOString() };
+      await D.put('feed_posts', post);
+      EB.bus.emit('feed:post', { id: post.id, status: post.status });
+      if (post.status === 'flagged') EB.toast('Posted. It\'s held for a quick review because: ' + m.flags.join(', '));
+      else { EB.toast('Posted to the Buzz Feed 🎉 +20 Buzz points'); EB.feed.share(post); }
+      feedFilter = 'My posts'; renderFeed();
+    };
+    const all = EB.feed.list();
+    const visible = all.filter((p) => p.status === 'published' || (p.author_id === UID && p.status !== 'removed'));
+    const f = feedFilter;
+    const posts = visible.filter((p) => f === 'For you' || (f === 'Reviews' && p.kind === 'review') || (f === 'Stories' && p.kind === 'story') || (f === 'Tips & questions' && ['tip', 'question'].includes(p.kind)) || (f === 'Deals' && p.kind === 'promo') || (f === 'My posts' && p.author_id === UID));
+    const list = $('[data-list]', v);
+    EB.feed.render(list, { posts, ads: f !== 'My posts', cardOpts: { commentAs: { name: me.name }, refresh: () => renderFeed(), onShop: (p) => {
+      const it = find(p.sku) || CATALOG()[p.sku];
+      if (!it) return EB.toast('Product not available');
+      if (p.kind === 'promo') { S.offers[it.id] = { price: p.promo_price, perks: ['Feed promo'], exp: Date.now() + 15 * 60000 }; addToCart(it); EB.toast(`${it.e} Feed offer applied: ${money(p.promo_price, 0)}`); }
+      else details(it);
+    } } });
+    if (opt.highlight) { const el = $(`[data-post="${opt.highlight}"]`, v); if (el) { el.classList.add('hl'); setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100); } }
+    if (opt.compose) $('[data-text]', v).focus();
+  }
+
   /* ---------------- Dashboard (full lists live here, not in the chat) ---------------- */
   const TX_TYPES = { order: 'Order', game: 'Game win', referral: 'Referral', promo: 'Promo credit', spend: 'Credits used', refund: 'Credits refunded', expired: 'Credits expired' };
   function allTx() {
@@ -820,7 +885,10 @@
     suggestDefault();
     if (location.hash === '#play') { EB.setNav('play'); renderPlay(); }
     if (location.hash === '#dash') { EB.setNav('dash'); renderDash(); }
+    if (location.hash === '#feed') { EB.setNav('feed'); renderFeed(); }
+    const deep = location.hash.match(/^#post=([\w-]+)/);
+    if (deep) { EB.setNav('feed'); renderFeed({ highlight: deep[1] }); }
     // another device (or the Admin portal changing win limits) updated synced data
-    D.on((e) => { if (e.type !== 'remote') return; renderContext(); if (['dash', 'wallet', 'orders', 'account', 'play'].includes(S.view)) nav(S.view); });
+    D.on((e) => { if (e.type !== 'remote') return; renderContext(); if (['dash', 'wallet', 'orders', 'account', 'play', 'feed'].includes(S.view)) nav(S.view); });
   });
 })();
