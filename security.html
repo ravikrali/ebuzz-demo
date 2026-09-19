@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>eBuzz Security</title>
+<meta name="description" content="eBuzz.ai security playbook: a full vulnerability catalogue with fixes, threat monitoring and detections, and incident response and recovery.">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/ebuzz.css?v=9">
+<style>
+  .page-hero { padding: 44px 0 10px; }
+  .page-hero h1 { font-size: clamp(34px, 4.6vw, 52px); }
+  .page-hero p { color: var(--ink-2); font-size: 17.5px; max-width: 760px; }
+  .subnav { position: sticky; top: 62px; z-index: 15; background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(8px); padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .subnav .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .subnav a.chip { text-decoration: none; flex: none; }
+  .fam { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+  .fam + .fam { margin-top: 10px; }
+  .fam summary { list-style: none; cursor: pointer; padding: 14px 16px; display: grid; grid-template-columns: 26px 1fr auto auto; gap: 12px; align-items: center; }
+  .fam summary::-webkit-details-marker { display: none; }
+  .fam summary .nm { font-weight: 700; }
+  .fam summary .ct { font-size: 12.5px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+  .fam[open] summary .ct::after { content: ' \25B2'; } .fam:not([open]) summary .ct::after { content: ' \25BC'; }
+  .fam .body { padding: 0 16px 16px; }
+  .fam .intro { color: var(--muted); font-size: 14px; margin: 0 0 12px; max-width: 760px; }
+  .vuln { border-top: 1px solid var(--line); padding: 12px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 18px; }
+  .vuln .v { grid-column: 1 / -1; font-weight: 700; font-size: 14.5px; }
+  .vuln .lbl { font-size: 10.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+  .vuln .tx { font-size: 13.5px; color: var(--ink-2); line-height: 1.5; }
+  .vuln .gate { grid-column: 1 / -1; font-size: 12.5px; color: var(--muted); border-left: 2px solid var(--line); padding-left: 10px; margin-top: 2px; }
+  .sev { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+  .sev.Critical { background: var(--red-soft); color: var(--red); }
+  .sev.High { background: var(--honey-soft); color: var(--honey-ink); }
+  .sev.Medium { background: var(--blue-soft); color: var(--blue); }
+  .ph { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); padding: 14px 16px; }
+  .ph + .ph { margin-top: 10px; }
+  .ph ul { margin: 8px 0 0; padding-left: 18px; font-size: 13.5px; color: var(--ink-2); }
+  .ph ul li { margin: 3px 0; }
+  .hour { display: grid; grid-template-columns: 96px 180px 1fr; gap: 14px; padding: 12px 0; border-top: 1px solid var(--line); align-items: start; }
+  .hour .t { font-weight: 700; font-size: 13px; color: var(--red); font-family: var(--mono, monospace); }
+  .hour .h { font-weight: 700; font-size: 14px; }
+  .hour .d { font-size: 13.5px; color: var(--ink-2); line-height: 1.5; }
+  @media (max-width: 900px) {
+    .fam summary { grid-template-columns: 1fr auto; }
+    .fam summary .ico { display: none; }
+    .vuln { grid-template-columns: 1fr; }
+    .hour { grid-template-columns: 1fr; gap: 4px; }
+  }
+</style>
+</head>
+<body>
+<header class="site-nav"><div class="in">
+  <a class="brand" href="index.html" id="brand"><span>eBuzz<b>.ai</b></span></a>
+  <nav class="links">
+    <a href="index.html#portals" class="hide-m">Prototype</a>
+    <a href="architecture.html">Architecture</a>
+    <a href="security.html" style="color:var(--ink)">Security</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="docs.html?d=plan" class="hide-m">Business plan</a>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode"></button>
+  </nav>
+</div></header>
+
+<main class="wrap-w">
+  <section class="page-hero">
+    <div class="eyebrow">Security playbook &middot; v1.0 &middot; September 2026</div>
+    <h1>Making eBuzz hard to hack, and quick to recover</h1>
+    <p>There is no such thing as a hacker-proof application. Every system with users, money and third-party code has a way in. What a serious security programme buys is a different outcome: attacks that fail against a control rather than succeed quietly, attacks that are detected in minutes rather than months, and a breach that costs a weekend instead of the company. This page is the working plan for that &mdash; every class of vulnerability that applies to eBuzz with its fix, what we watch, and exactly what happens in the first hour of a breach.</p>
+    <div class="kpis" style="margin-top:18px">
+      <div class="kpi"><div class="l">Vulnerability classes</div><div class="v" id="nVuln">-</div></div>
+      <div class="kpi"><div class="l">Families</div><div class="v" id="nFam">-</div></div>
+      <div class="kpi"><div class="l">Detections</div><div class="v" id="nDet">-</div></div>
+      <div class="kpi"><div class="l">SEV-1 response</div><div class="v">15 min</div></div>
+      <div class="kpi"><div class="l">Checkout RTO</div><div class="v">&le; 1 h</div></div>
+    </div>
+  </section>
+
+  <nav class="subnav" aria-label="Sections"><div class="chips">
+    <a class="chip" href="#stance">Stance</a><a class="chip" href="#catalogue">Vulnerability catalogue</a><a class="chip" href="#gaps">Prototype gaps</a><a class="chip" href="#monitor">Monitoring</a><a class="chip" href="#detect">Detections</a><a class="chip" href="#ir">Incident response</a><a class="chip" href="#recover">Recovery</a><a class="chip" href="#plan">Programme</a>
+  </div></nav>
+
+  <section class="section" id="stance" style="border-top:0">
+    <h2>Five things that decide the outcome</h2>
+    <p class="sub">Most of the security value in a product like this comes from a small number of structural decisions, taken early. Everything else is maintenance.</p>
+    <div class="grid3" id="stanceGrid"></div>
+    <div class="warn-note" style="margin-top:16px"><b>The honest framing for investors and the board:</b> we are not claiming eBuzz cannot be breached. We are claiming that the high-value paths &mdash; customer data, payouts and the agent fleet &mdash; each require an attacker to defeat several independent controls, that we will know quickly when someone tries, and that we have rehearsed what we do next. That is what "secure" means for a real business.</div>
+  </section>
+
+  <section class="section" id="catalogue">
+    <h2>Every class of vulnerability that applies to eBuzz</h2>
+    <p class="sub">Organised by attack surface rather than by framework, so each entry is actionable. It covers the OWASP Top 10, the API Security Top 10, MASVS for mobile, and the OWASP Top 10 for LLM Applications, plus the marketplace, payment and agentic risks that no generic list includes. Open a family to see how each one would hit this product, the fix, and where it gets caught.</p>
+    <div class="row wrap" style="gap:8px;margin-bottom:14px">
+      <button class="btn sm" id="expandAll">Expand all</button>
+      <button class="btn sm ghost" id="collapseAll">Collapse all</button>
+    </div>
+    <div id="famList"></div>
+  </section>
+
+  <section class="section" id="gaps">
+    <h2>What this prototype would need before it carried real data</h2>
+    <p class="sub">The demo in this repo is a working illustration, not a secure system, and some of its shortcuts are exactly the ones that become breaches when copied into production. Listing them is more useful than pretending they are not there.</p>
+    <div id="gapTable"></div>
+  </section>
+
+  <section class="section" id="monitor">
+    <h2>Monitoring: seeing the attack</h2>
+    <p class="sub">Detection is where the money goes once the basics are in place, because prevention eventually fails and the only variable left is how long it takes to notice.</p>
+    <h3 style="margin:0 0 12px">The stack</h3>
+    <div id="stackTable"></div>
+    <h3 style="margin:28px 0 12px">What we log, and for how long</h3>
+    <div id="telTable"></div>
+    <div class="ai-note" style="margin-top:16px" id="honeyNote"></div>
+  </section>
+
+  <section class="section" id="detect">
+    <h2>The detections that matter</h2>
+    <p class="sub">Written as code, version-controlled, and tested against real event samples. Each one names the automatic response, because an alert with no response is a notification, not a control.</p>
+    <div id="detTable"></div>
+  </section>
+
+  <section class="section" id="ir">
+    <h2>When it happens anyway</h2>
+    <p class="sub">The difference between an incident and a catastrophe is almost entirely the first hour. That hour should be rehearsed, not improvised.</p>
+    <h3 style="margin:0 0 12px">Severity and who wakes up</h3>
+    <div id="sevTable"></div>
+    <h3 style="margin:28px 0 8px">The first sixty minutes</h3>
+    <div id="hourList"></div>
+    <h3 style="margin:28px 0 12px">Runbooks</h3>
+    <div class="grid2" id="runGrid"></div>
+  </section>
+
+  <section class="section" id="recover">
+    <h2>Recovery targets</h2>
+    <p class="sub">Recovery point objective is how much data we can afford to lose. Recovery time objective is how long the service can be gone. Both are tested quarterly, because a backup that has never been restored is a hypothesis.</p>
+    <div id="recTable"></div>
+    <h3 style="margin:28px 0 12px">Afterwards</h3>
+    <div class="grid2" id="afterGrid"></div>
+  </section>
+
+  <section class="section" id="plan">
+    <h2>The programme, in order</h2>
+    <p class="sub">Sequenced so the expensive-to-retrofit decisions happen first. Year-one budget is roughly $420k: people $260k, tooling $90k, pentest and audits $70k &mdash; about 8% of the seed round, which is the right weight for a marketplace whose product is trust.</p>
+    <div id="phaseList"></div>
+    <div class="grid3" style="margin-top:18px">
+      <div class="card"><b>Who owns it</b><p class="muted" style="margin:6px 0 0;font-size:14px">A fractional CISO from month 0 and a full-time Security Lead by month 4. Risk &amp; Compliance meets monthly; an AI governance board signs off every change to agent autonomy.</p></div>
+      <div class="card"><b>How it is tested</b><p class="muted" style="margin:6px 0 0;font-size:14px">Scans on every PR, DAST weekly, third-party pentest before launch and annually, AI red-teaming quarterly, and a public bug bounty three months after launch.</p></div>
+      <div class="card"><b>Where it connects</b><p class="muted" style="margin:6px 0 0;font-size:14px">The compliance program, STRIDE threat model and tool choices behind these controls are on the <a href="architecture.html#security">architecture page</a>.</p></div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-foot"><div class="wrap-w">
+  <div class="row between wrap" style="gap:10px"><span>eBuzz.ai: concept prototype &middot; September 2026</span><span><a href="docs.html?d=thesis">Thesis</a> &middot; <a href="docs.html?d=plan">Business plan</a> &middot; <a href="architecture.html">Architecture</a> &middot; <a href="security.html">Security</a> &middot; <a href="roadmap.html">Roadmap</a> &middot; <a href="https://github.com/ravikrali/ebuzz-demo">Source</a></span></div>
+  <p class="muted" style="margin:10px 0 0;font-size:12.5px">Planning document. Controls described here are the intended design for the production build, not the state of this prototype.</p>
+</div></footer>
+
+<script src="assets/js/ui.js?v=9"></script>
+<script src="assets/js/security-data.js?v=1"></script>
+<script>
+(function () {
+  const { $, esc, icon } = EB;
+  const S = window.SEC;
+
+  const tb = $('#themeBtn'); tb.innerHTML = EB.icon('sun'); tb.onclick = EB.toggleTheme;
+
+  /* ---------- counters ---------- */
+  const nVuln = S.families.reduce((a, f) => a + f.items.length, 0);
+  $('#nVuln').textContent = nVuln;
+  $('#nFam').textContent = S.families.length;
+  $('#nDet').textContent = S.detections.length;
+
+  /* ---------- stance ---------- */
+  const stance = [
+    ['Authorization on the server, always', 'Every record access is decided by the server against the authenticated subject, with row-level security as a backstop. Broken access control is the most common breach cause and the easiest to design out on day one.'],
+    ['Passkeys, so phishing has nothing to steal', 'No passwords for staff, phishing-resistant FIDO2 for anyone who can move money. This removes credential stuffing, password reuse and real-time phishing proxies in one decision.'],
+    ['A human in front of every outbound dollar', 'Payouts, refunds above a cap, and bank-detail changes need approval and a cooling period. Payout redirection is the most common large marketplace loss, and it is a process control, not a technical one.'],
+    ['Agents get least privilege and no side effects', 'Twenty-six agents with tools is the novel risk here. They hold scoped, short-lived credentials, act only through typed and validated actions, and never publish, sign or pay without a person.'],
+    ['Assume breach, and rehearse it', 'Immutable logs in a separate account, honeytokens in every tenant, quarterly restore drills, and one runbook exercised for real every month. Mean time to contain is the number that matters.'],
+    ['Minimise what a breach can even expose', 'PII is encrypted on the device before it syncs, cards never touch our servers, prompts carry pseudonymous IDs. The strongest control is data that was never there to steal.'],
+  ];
+  $('#stanceGrid').innerHTML = stance.map(([t, d]) => `<div class="card"><div class="row" style="gap:8px">${icon('shield')}<b>${esc(t)}</b></div><p class="muted" style="margin:6px 0 0;font-size:14px">${esc(d)}</p></div>`).join('');
+
+  /* ---------- vulnerability catalogue ---------- */
+  $('#famList').innerHTML = S.families.map((f) => `
+    <details class="fam" id="fam-${esc(f.id)}">
+      <summary>
+        <span class="ico">${icon(f.icon)}</span>
+        <span class="nm">${esc(f.name)}</span>
+        <span class="sev ${esc(f.sev)}">${esc(f.sev)}</span>
+        <span class="ct">${f.items.length} classes</span>
+      </summary>
+      <div class="body">
+        <p class="intro">${esc(f.intro)}</p>
+        ${f.items.map(([v, how, fix, gate]) => `
+          <div class="vuln">
+            <div class="v">${esc(v)}</div>
+            <div><div class="lbl">How it hits eBuzz</div><div class="tx">${esc(how)}</div></div>
+            <div><div class="lbl">The fix</div><div class="tx">${esc(fix)}</div></div>
+            <div class="gate"><b>Caught by:</b> ${esc(gate)}</div>
+          </div>`).join('')}
+      </div>
+    </details>`).join('');
+
+  $('#expandAll').onclick = () => EB.$$('.fam').forEach((d) => (d.open = true));
+  $('#collapseAll').onclick = () => EB.$$('.fam').forEach((d) => (d.open = false));
+
+  /* ---------- prototype gaps ---------- */
+  $('#gapTable').innerHTML = EB.table(['Gap', 'Where', 'What the demo does', 'What production needs', 'Severity'],
+    S.gaps.map(([t, where, what, fix, sev]) => [`<b>${esc(t)}</b>`, `<span class="mono" style="font-size:12px">${esc(where)}</span>`, esc(what), esc(fix), `<span class="sev ${esc(sev)}">${esc(sev)}</span>`]), { left: true });
+
+  /* ---------- monitoring ---------- */
+  $('#stackTable').innerHTML = EB.table(['Layer', 'What we use', 'Why it is there'],
+    S.monitorStack.map(([a, b, c]) => [`<b>${esc(a)}</b>`, esc(b), esc(c)]), { left: true });
+  $('#telTable').innerHTML = EB.table(['Source', 'What is captured', 'Retention', 'Note'],
+    S.telemetry.map(([a, b, c, d]) => [`<b>${esc(a)}</b>`, esc(b), `<span class="tag blue">${esc(c)}</span>`, esc(d)]), { left: true });
+  $('#honeyNote').innerHTML = `<b>The cheapest detection we will deploy:</b> honeytokens. A fake customer record in every tenant, a decoy cloud key in a config file, a canary row in the orders table. Nothing legitimate ever touches them, so a single access is a near-zero-false-positive signal that someone is already inside. Teams routinely spend six figures on detection before doing this, and it costs a day of work.`;
+
+  $('#detTable').innerHTML = EB.table(['Detection', 'Signal', 'Severity', 'Automatic response'],
+    S.detections.map(([a, b, c, d]) => [`<b>${esc(a)}</b>`, esc(b), `<span class="sev ${esc(c)}">${esc(c)}</span>`, esc(d)]), { left: true });
+
+  /* ---------- incident response ---------- */
+  $('#sevTable').innerHTML = EB.table(['Level', 'What qualifies', 'Response time', 'Who is paged', 'Comms cadence'],
+    S.severity.map(([a, b, c, d, e]) => [`<b style="white-space:nowrap">${esc(a)}</b>`, esc(b), `<span class="tag red">${esc(c)}</span>`, esc(d), esc(e)]), { left: true });
+
+  $('#hourList').innerHTML = S.firstHour.map(([t, h, d]) => `<div class="hour"><div class="t">${esc(t)}</div><div class="h">${esc(h)}</div><div class="d">${esc(d)}</div></div>`).join('');
+
+  $('#runGrid').innerHTML = S.runbooks.map(([t, d]) => `<div class="card"><b>${esc(t)}</b><p class="muted" style="margin:6px 0 0;font-size:13.5px;line-height:1.55">${esc(d)}</p></div>`).join('');
+
+  /* ---------- recovery ---------- */
+  $('#recTable').innerHTML = EB.table(['System', 'RPO (data we can lose)', 'RTO (time to restore)', 'How'],
+    S.recovery.map(([a, b, c, d]) => [`<b>${esc(a)}</b>`, `<span class="tag green">${esc(b)}</span>`, `<span class="tag honey">${esc(c)}</span>`, esc(d)]), { left: true });
+  $('#afterGrid').innerHTML = S.afterwards.map(([t, d]) => `<div class="card"><b>${esc(t)}</b><p class="muted" style="margin:6px 0 0;font-size:13.5px;line-height:1.55">${esc(d)}</p></div>`).join('');
+
+  /* ---------- programme ---------- */
+  $('#phaseList').innerHTML = S.phases.map(([p, title, items, when]) => `
+    <div class="ph">
+      <div class="row between wrap" style="gap:8px">
+        <div class="row" style="gap:10px"><span class="tag violet">${esc(p)}</span><b>${esc(title)}</b></div>
+        <span class="tag">${esc(when)}</span>
+      </div>
+      <ul>${items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>
+    </div>`).join('');
+
+  /* ---------- deep link to a family ---------- */
+  if (location.hash.startsWith('#fam-')) { const d = $(location.hash); if (d) { d.open = true; d.scrollIntoView(); } }
+})();
+</script>
+</body>
+</html>
